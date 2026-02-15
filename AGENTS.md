@@ -73,3 +73,44 @@ bun run src/cli.ts semantic <q>   # Semantic search
 - Default embedding provider is `MockEmbeddingProvider` (no API key needed)
 - Config stored in `<project>/.ctxq/config.json`
 - No `.env` required - uses defaults from `src/config.ts`
+
+## PUBLISHING & RELEASES
+
+### Setup (done)
+| File | Purpose |
+| ---- |---------|
+| `package.json` | `private: false`, `files: ["dist"]`, `publishConfig`, bin: `dist/cli.js` |
+| `.releaserc.json` | semantic-release config (branches: main, npm + github plugins) |
+| `.github/workflows/release.yml` | CI: install → test → build → release |
+
+### Release Workflow
+1. **Commit message format** (conventional commits):
+   - `fix:` → patch bump (0.1.0 → 0.1.1)
+   - `feat:` → minor bump (0.1.0 → 0.2.0)
+   - `BREAKING CHANGE:` in body → major bump (0.1.0 → 1.0.0)
+
+2. **Trigger**: Push to `main` branch → GitHub Actions runs automatically
+
+3. **Actions workflow** (`.github/workflows/release.yml`):
+   - Checkout + bun setup
+   - `bun install`
+   - `bun test`
+   - `bun run build`
+   - `bun run release` (semantic-release)
+
+4. **Output**: Version bump, npm publish, GitHub release created
+
+### Required Secrets
+- `NPM_TOKEN` → GitHub repo → Settings → Secrets and variables → Actions
+  - Get from: https://www.npmjs.com/settings/tokens
+
+### Manual Release (local)
+```bash
+bun run release
+```
+
+### Common Tasks
+| Task | Command |
+|------|---------|
+| Dry run release | `bun run release --dry-run` |
+| Force initial version | `npm version 0.1.0 --force` then push |
