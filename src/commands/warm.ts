@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../config';
 import { createEmbeddingProvider } from '../embeddings';
+import { extractDFG } from '../graph/dfg';
 import { createVectorStore } from '../storage/vector';
 import { analyzeDirectory } from './structure';
 
@@ -66,6 +67,14 @@ export async function runWarm(options: WarmOptions): Promise<void> {
       const start = Math.max(0, unit.line - 6);
       const end = Math.min(lines.length, unit.line + 5);
       content = lines.slice(start, end).join('\n');
+
+      // Extract DFG summary for function-type units
+      if (unit.type === 'function' || unit.type === 'method') {
+        const dfgInfo = extractDFG(unit.file, unit.name);
+        const varCount = dfgInfo.varRefs.length;
+        const edgeCount = dfgInfo.dataflowEdges.length;
+        content += `\n\nvars:${varCount}, def-use chains:${edgeCount}`;
+      }
     } catch {
       // Use basic info if we can't read file
     }

@@ -55,7 +55,7 @@ const FUNCTION_NODE_TYPES = new Set([
 /**
  * Find a function node by name in the AST
  */
-function findFunctionNode(
+export function findFunctionNode(
   tree: Tree,
   functionName: string,
 ): { node: SyntaxNode; type: string } | null {

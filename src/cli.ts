@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { runCalls } from './commands/calls';
 import { runComplexity } from './commands/complexity';
 import { runConfig } from './commands/config';
+import { runDfg } from './commands/dfg';
 import { runImpact } from './commands/impact';
 import { runSemantic } from './commands/semantic';
 import { analyzeDirectory } from './commands/structure';
@@ -58,6 +59,15 @@ program
   .argument('[function]', 'Function name (optional)')
   .action((file, fn) => {
     runComplexity(file, fn);
+  });
+
+program
+  .command('dfg')
+  .description('Show data flow graph for a function')
+  .argument('<file>', 'Source file')
+  .argument('<function>', 'Function name')
+  .action((file, fn) => {
+    runDfg(file, fn);
   });
 
 program
