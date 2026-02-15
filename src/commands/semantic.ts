@@ -1,5 +1,7 @@
 import { createEmbeddingProvider } from '../embeddings';
 import { createVectorStore } from '../storage/vector';
+import { loadConfig, saveConfig } from '../config';
+import { runConfigInterview } from './config-interview';
 
 export interface SemanticOptions {
   projectPath: string;
@@ -13,18 +15,37 @@ export async function runSemantic(options: SemanticOptions): Promise<void> {
   const {
     projectPath,
     query,
-    provider = 'mock',
-    searchModel = 'embeddinggemma',
+    provider: cliProvider,
+    searchModel: cliSearchModel,
     limit = 10,
   } = options;
+
+  // Load config at start
+  const config = loadConfig(projectPath);
+
+  // Determine effective provider: CLI flag > config > default ('mock')
+  const effectiveProvider = cliProvider || config.embeddings.provider || 'mock';
+
+  // Determine effective searchModel: CLI flag > config.searchModel > config.warmModel > default
+  const effectiveSearchModel = cliSearchModel || config.embeddings.searchModel || config.embeddings.warmModel || 'embeddinggemma';
+
+  // If provider is 'ollama' AND warmModel is missing/empty, trigger interview
+  if (effectiveProvider === 'ollama' && !config.embeddings.warmModel) {
+    console.log('\n# Ollama provider selected but warmModel not configured.\n');
+    const partialConfig = await runConfigInterview(projectPath, config.embeddings);
+    // Merge returned partial into config.embeddings
+    config.embeddings = { ...config.embeddings, ...partialConfig };
+    // Save config after interview
+    saveConfig(projectPath, config);
+  }
 
   console.log(`# Semantic search: "${query}"`);
   console.log('');
 
-  // Create embedding provider
+  // Create embedding provider with full config (including apiKey)
   const embeddingProvider = createEmbeddingProvider({
-    provider,
-    searchModel,
+    ...config.embeddings,
+    searchModel: cliSearchModel || config.embeddings.searchModel || config.embeddings.warmModel || 'embeddinggemma',
   });
 
   // Check availability

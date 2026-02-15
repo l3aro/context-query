@@ -1,6 +1,8 @@
-import { analyzeDirectory, CodeUnit } from './structure';
+import { analyzeDirectory, type CodeUnit } from './structure';
 import { createEmbeddingProvider, MockEmbeddingProvider } from '../embeddings';
 import { createVectorStore, VectorStore } from '../storage/vector';
+import { loadConfig, saveConfig } from '../config';
+import { runConfigInterview } from './config-interview';
 import { readFileSync } from 'fs';
 import { join, relative } from 'path';
 
@@ -11,15 +13,34 @@ export interface WarmOptions {
 }
 
 export async function runWarm(options: WarmOptions): Promise<void> {
-  const { projectPath, provider = 'mock', warmModel } = options;
+  const { projectPath, provider: cliProvider, warmModel: cliWarmModel } = options;
+
+  // Load config at start
+  const config = loadConfig(projectPath);
+
+  // Determine effective provider: CLI flag > config > default ('mock')
+  const effectiveProvider = cliProvider || config.embeddings.provider || 'mock';
+
+  // Determine effective warmModel: CLI flag > config.warmModel > default
+  const effectiveWarmModel = cliWarmModel || config.embeddings.warmModel;
+
+  // If provider is 'ollama' AND warmModel is missing/empty, trigger interview
+  if (effectiveProvider === 'ollama' && !effectiveWarmModel) {
+    console.log('\n# Ollama provider selected but warmModel not configured.\n');
+    const partialConfig = await runConfigInterview(projectPath, config.embeddings);
+    // Merge returned partial into config.embeddings
+    config.embeddings = { ...config.embeddings, ...partialConfig };
+    // Save config after interview
+    saveConfig(projectPath, config);
+  }
 
   console.log(`# Building semantic index for: ${projectPath}`);
   console.log('');
 
-  // Create embedding provider
+  // Create embedding provider with full config (including apiKey)
   const embeddingProvider = createEmbeddingProvider({
-    provider,
-    warmModel: warmModel || 'nomic-embed-text-v2-moe',
+    ...config.embeddings,
+    warmModel: cliWarmModel || config.embeddings.warmModel || 'nomic-embed-text-v2-moe',
   });
 
   console.log(`Using provider: ${embeddingProvider.constructor.name}`);
