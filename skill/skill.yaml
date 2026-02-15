@@ -1,0 +1,80 @@
+# skill.yaml - Context Query (ctxq) AI Skill Metadata
+# This file helps AI assistants discover and use ctxq capabilities
+
+skill:
+  name: "Context Query (ctxq)"
+  description: "Code analysis tool for LLMs with tree-sitter parsing and semantic embeddings. Enables semantic search over codebase, function call analysis, and code structure exploration."
+  category: "code-analysis"
+  version: "0.1.0"
+
+  tags:
+    - tree-sitter
+    - semantic-search
+    - embeddings
+    - code-analysis
+    - ollama
+    - vector-database
+    - sqlite-vec
+
+  documentation:
+    skills: "SKILLS.md"
+    architecture: "AGENTS.md"
+    main: "https://github.com/l3aro/project-context-query#readme"
+
+  patterns:
+    - name: "CLI Usage"
+      description: "How to use ctxq CLI commands"
+      file: "SKILLS.md"
+      section: "CLI Commands"
+
+    - name: "Programmatic API"
+      description: "Using ctxq programmatically (EmbeddingProvider, AST parsing)"
+      file: "SKILLS.md"
+      section: "Programmatic API"
+
+    - name: "Semantic Search"
+      description: "Building semantic index and searching code"
+      file: "SKILLS.md"
+      section: "Semantic Search"
+
+    - name: "Call Graph Analysis"
+      description: "Finding function callers and dependencies"
+      file: "SKILLS.md"
+      section: "Call Graph"
+
+  capabilities:
+    - "Parse TypeScript, JavaScript, and PHP with tree-sitter"
+    - "Build semantic embeddings with Ollama"
+    - "Vector search over codebase"
+    - "Analyze function and class structure"
+    - "Build call graphs"
+    - "Find impact/callers of functions"
+
+  triggers:
+    - "ctxq"
+    - "context-query"
+    - "code analysis"
+    - "semantic search"
+    - "tree-sitter"
+    - "embeddings"
+    - "ollama"
+    - "codebase search"
+    - "find function callers"
+    - "code structure"
+
+  repository:
+    url: "https://github.com/l3aro/project-context-query"
+    license: "MIT"
+
+  ai_usage:
+    instruction: "When helping with ctxq, reference SKILLS.md for usage patterns and AGENTS.md for architecture"
+    quick_start: |
+      # CLI
+      bun run src/cli.ts tree           # File structure
+      bun run src/cli.ts structure      # Functions/classes
+      bun run src/cli.ts warm           # Build semantic index
+      bun run src/cli.ts semantic <q>   # Semantic search
+
+      # Programmatic
+      import { createEmbeddingProvider } from './embeddings/index.ts';
+      import { analyzeDirectory } from './commands/structure.ts';
