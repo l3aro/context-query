@@ -1,10 +1,9 @@
-import { buildCallGraph } from '../graph/calls';
-import { analyzeDirectory, CodeUnit } from '../commands/structure';
+import { analyzeDirectory } from '../commands/structure';
 
 export function runImpact(functionName: string, dirPath: string): void {
   // Get all functions/classes in the project
   const units = analyzeDirectory(dirPath);
-  const allFuncs = new Set(units.map((u) => u.name));
+  const _allFuncs = new Set(units.map((u) => u.name));
 
   // For now, we find direct references to the function
   // This is a simplified version - full implementation would need

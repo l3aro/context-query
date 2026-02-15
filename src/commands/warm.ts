@@ -1,9 +1,9 @@
-import { readFileSync } from 'fs';
-import { join, relative } from 'path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { loadConfig } from '../config';
-import { createEmbeddingProvider, MockEmbeddingProvider } from '../embeddings';
-import { createVectorStore, VectorStore } from '../storage/vector';
-import { analyzeDirectory, type CodeUnit } from './structure';
+import { createEmbeddingProvider } from '../embeddings';
+import { createVectorStore } from '../storage/vector';
+import { analyzeDirectory } from './structure';
 
 export interface WarmOptions {
   projectPath: string;
@@ -18,7 +18,7 @@ export async function runWarm(options: WarmOptions): Promise<void> {
   const config = loadConfig(projectPath);
 
   // Determine effective warmModel: CLI flag > config.warmModel > default
-  const effectiveWarmModel = cliWarmModel || config.embeddings.warmModel;
+  const _effectiveWarmModel = cliWarmModel || config.embeddings.warmModel;
 
   console.log(`# Building semantic index for: ${projectPath}`);
   console.log('');

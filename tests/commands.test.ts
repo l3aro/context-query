@@ -1,6 +1,6 @@
-import { test, expect, describe } from 'bun:test';
-import { buildFileTree, isIgnored, isSupported } from '../src/commands/tree';
+import { describe, expect, test } from 'bun:test';
 import { analyzeFile } from '../src/commands/structure';
+import { buildFileTree, isIgnored, isSupported } from '../src/commands/tree';
 
 describe('tree command', () => {
   test('isIgnored returns true for node_modules', () => {

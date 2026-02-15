@@ -1,4 +1,5 @@
-import { parseFile, getLanguageFromExtension } from '../ast/parser';
+import type { SyntaxNode, Tree } from 'tree-sitter';
+import { getLanguageFromExtension, parseFile } from '../ast/parser';
 
 export interface CallGraph {
   [caller: string]: string[]; // caller -> callees
@@ -10,12 +11,12 @@ export interface FileCallInfo {
   calls: string[]; // functions called here
 }
 
-const CALL_TYPES = new Set(['call_expression', 'identifier', 'member_call_expression']);
+const _CALL_TYPES = new Set(['call_expression', 'identifier', 'member_call_expression']);
 
-function extractCalls(tree: any): string[] {
+function extractCalls(tree: Tree): string[] {
   const calls: string[] = [];
 
-  function walk(node: any) {
+  function walk(node: SyntaxNode) {
     // Check if this is a function call
     if (node.type === 'call_expression') {
       const funcNode = node.childForFieldName('function');
@@ -32,7 +33,7 @@ function extractCalls(tree: any): string[] {
       }
     }
 
-    for (const child of node.children || []) {
+    for (const child of node.children ?? []) {
       walk(child);
     }
   }
@@ -41,12 +42,12 @@ function extractCalls(tree: any): string[] {
   return [...new Set(calls)]; // Deduplicate
 }
 
-function extractDefines(tree: any, language: string): string[] {
+function extractDefines(tree: Tree, _language: string): string[] {
   const defines: string[] = [];
 
   const functionTypes = new Set(['function_declaration', 'method_definition', 'arrow_function']);
 
-  function walk(node: any) {
+  function walk(node: SyntaxNode) {
     if (functionTypes.has(node.type)) {
       const nameNode = node.childForFieldName('name');
       if (nameNode) {
@@ -61,7 +62,7 @@ function extractDefines(tree: any, language: string): string[] {
       }
     }
 
-    for (const child of node.children || []) {
+    for (const child of node.children ?? []) {
       walk(child);
     }
   }
@@ -89,8 +90,8 @@ export function analyzeCalls(filePath: string): FileCallInfo {
 }
 
 export function buildCallGraph(dirPath: string): CallGraph {
-  const { readdirSync, statSync } = require('fs');
-  const { join } = require('path');
+  const { readdirSync, statSync } = require('node:fs');
+  const { join } = require('node:path');
 
   const IGNORE_DIRS = new Set(['node_modules', '.git', '.ctxq', 'dist', 'build']);
   const SUPPORTED_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.php']);
@@ -117,7 +118,7 @@ export function buildCallGraph(dirPath: string): CallGraph {
           }
         }
       }
-    } catch (e) {
+    } catch (_e) {
       // Skip inaccessible
     }
   }
@@ -136,11 +137,11 @@ export function buildCallGraph(dirPath: string): CallGraph {
     for (const call of info.calls) {
       // We need to track which function is making the call
       // For now, we'll add global calls
-      if (!graph['__global']) {
-        graph['__global'] = [];
+      if (!graph.__global) {
+        graph.__global = [];
       }
-      if (!graph['__global'].includes(call)) {
-        graph['__global'].push(call);
+      if (!graph.__global.includes(call)) {
+        graph.__global.push(call);
       }
     }
   }

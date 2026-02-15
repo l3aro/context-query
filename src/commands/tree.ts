@@ -1,5 +1,5 @@
-import { readdirSync, statSync, lstatSync } from 'fs';
-import { join, relative } from 'path';
+import { lstatSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 
 export interface FileNode {
   name: string;
@@ -64,11 +64,11 @@ export function buildFileTree(rootPath: string, relativePath: string = ''): File
             isDirectory: false,
           });
         }
-      } catch (e) {
+      } catch (_e) {
         // Skip files we can't access
       }
     }
-  } catch (e) {
+  } catch (_e) {
     // Directory doesn't exist or can't be read
   }
 

@@ -1,9 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { extname } from 'node:path';
 import Parser from 'tree-sitter';
-import TypeScript from 'tree-sitter-typescript';
 import JavaScript from 'tree-sitter-javascript';
 import Php from 'tree-sitter-php';
-import { readFileSync } from 'fs';
-import { join, extname } from 'path';
+import TypeScript from 'tree-sitter-typescript';
 
 export type Language = 'typescript' | 'javascript' | 'php';
 

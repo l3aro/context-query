@@ -1,7 +1,7 @@
-import type { EmbeddingProvider, EmbeddingConfig } from './types';
-import { DEFAULT_CONFIG } from './types';
 import { MockEmbeddingProvider } from './mock';
 import { OllamaEmbeddingProvider } from './ollama';
+import type { EmbeddingConfig, EmbeddingProvider } from './types';
+import { DEFAULT_CONFIG } from './types';
 
 export type { EmbeddingProvider, EmbeddingConfig };
 export { DEFAULT_CONFIG };
@@ -14,7 +14,6 @@ export function createEmbeddingProvider(config?: Partial<EmbeddingConfig>): Embe
   switch (finalConfig.provider) {
     case 'ollama':
       return new OllamaEmbeddingProvider(finalConfig);
-    case 'mock':
     default:
       return new MockEmbeddingProvider();
   }

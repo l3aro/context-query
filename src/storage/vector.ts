@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 
 export interface VectorEntry {
   id: string;
@@ -52,7 +52,7 @@ export class VectorStore {
         this.entries = parsed.entries || [];
         this.dimensions = parsed.dimensions || 768;
       }
-    } catch (e) {
+    } catch (_e) {
       // Start fresh
       this.entries = [];
     }

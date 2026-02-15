@@ -1,4 +1,4 @@
-import readline from 'readline';
+import readline from 'node:readline';
 import { loadConfig, saveConfig } from '../config';
 import { runFullConfigInterview } from './config-interview.ts';
 

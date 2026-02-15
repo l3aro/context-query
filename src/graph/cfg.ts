@@ -1,3 +1,4 @@
+import type { SyntaxNode, Tree } from 'tree-sitter';
 import { getLanguageFromExtension, parseFile } from '../ast/parser';
 
 export interface CFGBlock {
@@ -54,8 +55,11 @@ const FUNCTION_NODE_TYPES = new Set([
 /**
  * Find a function node by name in the AST
  */
-function findFunctionNode(tree: any, functionName: string): { node: any; type: string } | null {
-  function walk(node: any): { node: any; type: string } | null {
+function findFunctionNode(
+  tree: Tree,
+  functionName: string,
+): { node: SyntaxNode; type: string } | null {
+  function walk(node: SyntaxNode): { node: SyntaxNode; type: string } | null {
     // Check if this is a function node
     if (FUNCTION_NODE_TYPES.has(node.type)) {
       const nameNode = node.childForFieldName('name');
@@ -96,17 +100,17 @@ function findFunctionNode(tree: any, functionName: string): { node: any; type: s
 /**
  * Get the body node of a function
  */
-function getFunctionBody(functionNode: any): any {
+function getFunctionBody(functionNode: SyntaxNode): SyntaxNode | null {
   // Try to get the body field
   const body = functionNode.childForFieldName('body');
   if (body) return body;
 
   // For arrow functions with expression body (no braces)
   // The body is the last child
-  const children = functionNode.children || [];
+  const children = functionNode.children ?? [];
   if (children.length > 0) {
     const lastChild = children[children.length - 1];
-    if (lastChild.type !== '=>' && lastChild.type !== 'formal_parameters') {
+    if (lastChild && lastChild.type !== '=>' && lastChild.type !== 'formal_parameters') {
       return lastChild;
     }
   }
@@ -117,10 +121,10 @@ function getFunctionBody(functionNode: any): any {
 /**
  * Count decision points within a node for cyclomatic complexity
  */
-function countDecisionPoints(node: any): number {
+function countDecisionPoints(node: SyntaxNode): number {
   let count = 0;
 
-  function walk(n: any) {
+  function walk(n: SyntaxNode) {
     if (!n) return;
 
     // Decision point nodes
@@ -128,7 +132,7 @@ function countDecisionPoints(node: any): number {
       if (n.type === 'switch_statement') {
         // Count each case clause as a decision point
         const cases = n.children?.filter(
-          (child: any) => child.type === 'switch_case' || child.type === 'switch_default',
+          (child: SyntaxNode) => child.type === 'switch_case' || child.type === 'switch_default',
         );
         count += cases?.length || 1;
       } else {
@@ -157,16 +161,16 @@ function countDecisionPoints(node: any): number {
 /**
  * Count basic blocks within a function body
  */
-function countBlocks(node: any): number {
+function countBlocks(node: SyntaxNode): number {
   let blockCount = 2; // Entry + Exit blocks
 
-  function walk(n: any) {
+  function walk(n: SyntaxNode) {
     if (!n) return;
 
     // Each control flow structure adds blocks
     if (n.type === 'if_statement') {
       blockCount += 1; // Then block
-      const elseClause = n.children?.find((child: any) => child.type === 'else_clause');
+      const elseClause = n.children?.find((child: SyntaxNode) => child.type === 'else_clause');
       if (elseClause) {
         blockCount += 1; // Else block
       }
@@ -180,13 +184,13 @@ function countBlocks(node: any): number {
       blockCount += 1; // Loop body block
     } else if (n.type === 'switch_statement') {
       const cases = n.children?.filter(
-        (child: any) => child.type === 'switch_case' || child.type === 'switch_default',
+        (child: SyntaxNode) => child.type === 'switch_case' || child.type === 'switch_default',
       );
       blockCount += cases?.length || 0;
     }
 
     // Walk children
-    for (const child of n.children || []) {
+    for (const child of n.children ?? []) {
       walk(child);
     }
   }
@@ -198,7 +202,7 @@ function countBlocks(node: any): number {
 /**
  * Build basic blocks from function body
  */
-function buildBlocks(node: any, startLine: number, endLine: number): CFGBlock[] {
+function buildBlocks(node: SyntaxNode, startLine: number, endLine: number): CFGBlock[] {
   const blocks: CFGBlock[] = [];
   let blockId = 0;
 
@@ -211,7 +215,7 @@ function buildBlocks(node: any, startLine: number, endLine: number): CFGBlock[] 
   });
 
   // Count and add branch blocks for control flow structures
-  function addBranchBlocks(n: any) {
+  function addBranchBlocks(n: SyntaxNode) {
     if (!n) return;
 
     if (n.type === 'if_statement') {
@@ -236,9 +240,9 @@ function buildBlocks(node: any, startLine: number, endLine: number): CFGBlock[] 
       });
     } else if (n.type === 'switch_statement') {
       const cases = n.children?.filter(
-        (child: any) => child.type === 'switch_case' || child.type === 'switch_default',
+        (child: SyntaxNode) => child.type === 'switch_case' || child.type === 'switch_default',
       );
-      for (const caseNode of cases || []) {
+      for (const caseNode of cases ?? []) {
         blocks.push({
           id: blockId++,
           startLine: caseNode.startPosition.row + 1,
@@ -248,7 +252,7 @@ function buildBlocks(node: any, startLine: number, endLine: number): CFGBlock[] 
       }
     }
 
-    for (const child of n.children || []) {
+    for (const child of n.children ?? []) {
       addBranchBlocks(child);
     }
   }

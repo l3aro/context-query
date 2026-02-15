@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { existsSync, mkdirSync, rmdirSync, unlinkSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { existsSync, mkdirSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { extractCFG } from '../src/graph/cfg';
 
 describe('CFG complexity analysis', () => {

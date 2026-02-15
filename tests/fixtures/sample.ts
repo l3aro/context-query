@@ -1,17 +1,15 @@
 // Test fixture for structure command
 
 class UserService {
-  private name: string;
-
   constructor(name: string) {
     this.name = name;
   }
 
-  getUser(id: number): User | null {
+  getUser(_id: number): User | null {
     return null;
   }
 
-  async createUser(data: UserData): Promise<User> {
+  async createUser(_data: UserData): Promise<User> {
     return {} as User;
   }
 }

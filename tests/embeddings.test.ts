@@ -1,8 +1,8 @@
-import { test, expect, describe } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import {
   createEmbeddingProvider,
-  MockEmbeddingProvider,
   DEFAULT_CONFIG,
+  MockEmbeddingProvider,
 } from '../src/embeddings/index';
 
 describe('embeddings', () => {

@@ -1,5 +1,5 @@
-import { parseFile, getLanguageFromExtension } from '../ast/parser';
-import { readFileSync } from 'fs';
+import type { SyntaxNode, Tree } from 'tree-sitter';
+import { getLanguageFromExtension, parseFile } from '../ast/parser';
 
 export interface CodeUnit {
   type: 'function' | 'class' | 'method';
@@ -23,11 +23,11 @@ const TYPE_KEYWORDS = {
   },
 };
 
-function getNodeText(tree: any, node: any): string {
+function _getNodeText(tree: Tree, _node: SyntaxNode): string {
   return tree.rootNode.text;
 }
 
-function extractUnits(tree: any, language: string, filePath: string): CodeUnit[] {
+function extractUnits(tree: Tree, language: string, filePath: string): CodeUnit[] {
   const units: CodeUnit[] = [];
   const root = tree.rootNode;
 
@@ -37,7 +37,7 @@ function extractUnits(tree: any, language: string, filePath: string): CodeUnit[]
   const functionTypes = new Set(types.function);
   const classTypes = new Set(types.class);
 
-  function walk(node: any) {
+  function walk(node: SyntaxNode) {
     if (node.type === 'class_declaration' || classTypes.has(node.type)) {
       units.push({
         type: 'class',
@@ -79,8 +79,8 @@ export function analyzeFile(filePath: string): CodeUnit[] {
 }
 
 export function analyzeDirectory(dirPath: string): CodeUnit[] {
-  const { readdirSync, statSync } = require('fs');
-  const { join, relative } = require('path');
+  const { readdirSync, statSync } = require('node:fs');
+  const { join } = require('node:path');
   const units: CodeUnit[] = [];
 
   const IGNORE_DIRS = new Set(['node_modules', '.git', '.ctxq', 'dist', 'build']);
@@ -105,7 +105,7 @@ export function analyzeDirectory(dirPath: string): CodeUnit[] {
           }
         }
       }
-    } catch (e) {
+    } catch (_e) {
       // Skip inaccessible directories
     }
   }

@@ -16,7 +16,7 @@ export async function runSemantic(options: SemanticOptions): Promise<void> {
   const config = loadConfig(projectPath);
 
   // Determine effective searchModel: CLI flag > config.searchModel > config.warmModel > default
-  const effectiveSearchModel =
+  const _effectiveSearchModel =
     cliSearchModel ||
     config.embeddings.searchModel ||
     config.embeddings.warmModel ||
@@ -46,7 +46,7 @@ export async function runSemantic(options: SemanticOptions): Promise<void> {
 
   try {
     await vectorStore.initialize(embeddingProvider.getDimensions());
-  } catch (e) {
+  } catch (_e) {
     console.log('Error: Vector store not initialized. Run "ctxq warm" first.');
     return;
   }

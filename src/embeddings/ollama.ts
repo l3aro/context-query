@@ -1,4 +1,4 @@
-import type { EmbeddingProvider, EmbeddingConfig } from './types';
+import type { EmbeddingConfig, EmbeddingProvider } from './types';
 
 interface OllamaEmbedResponse {
   embeddings: number[][];
@@ -59,7 +59,7 @@ export class OllamaEmbeddingProvider implements EmbeddingProvider {
     const data: OllamaEmbedResponse = await response.json();
 
     // Try to get dimensions from first embedding if available
-    if (data.embeddings && data.embeddings[0]) {
+    if (data.embeddings?.[0]) {
       this.dimensions = data.embeddings[0].length;
     }
 
