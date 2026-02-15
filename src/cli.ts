@@ -6,7 +6,9 @@ import { runComplexity } from './commands/complexity';
 import { runConfig } from './commands/config';
 import { runDfg } from './commands/dfg';
 import { runImpact } from './commands/impact';
+import { runImports } from './commands/imports';
 import { runSemantic } from './commands/semantic';
+import { runSlice } from './commands/slice';
 import { analyzeDirectory } from './commands/structure';
 import { buildFileTree, printFileTree } from './commands/tree';
 import { runWarm } from './commands/warm';
@@ -71,6 +73,31 @@ program
   });
 
 program
+  .command('slice')
+  .description('Program slice - find what affects/affected by a line')
+  .argument('<file>', 'Source file')
+  .argument('<function>', 'Function name')
+  .argument('<line>', 'Line number')
+  .option('--direction <direction>', 'Slice direction: backward or forward', 'backward')
+  .option('--var <variable>', 'Trace specific variable')
+  .option('--lang <language>', 'Language (auto-detected from extension)')
+  .action(async (file, func, line, options) => {
+    const parsedLine = parseInt(line, 10);
+    if (Number.isNaN(parsedLine) || parsedLine < 1) {
+      console.error(`Error: Invalid line number: ${line}`);
+      process.exit(1);
+    }
+    await runSlice({
+      file,
+      function: func,
+      line: parsedLine,
+      direction: options.direction,
+      variable: options.var,
+      language: options.lang,
+    });
+  });
+
+program
   .command('warm')
   .description('Build semantic index')
   .argument('[path]', 'Path to analyze', '.')
@@ -93,6 +120,15 @@ program
   .argument('[path]', 'Path to project', '.')
   .action(async (path) => {
     await runConfig(path);
+  });
+
+program
+  .command('imports')
+  .description('Parse imports from a source file')
+  .argument('<file>', 'Source file to analyze')
+  .option('--lang <language>', 'Language (auto-detected from extension)')
+  .action(async (file, options) => {
+    await runImports(file, options.lang);
   });
 
 program.parse();
