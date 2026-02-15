@@ -1,13 +1,14 @@
 #!/usr/bin/env bun
 
 import { Command } from 'commander';
-import { buildFileTree, printFileTree } from './commands/tree';
-import { analyzeDirectory } from './commands/structure';
 import { runCalls } from './commands/calls';
-import { runImpact } from './commands/impact';
-import { runWarm } from './commands/warm';
-import { runSemantic } from './commands/semantic';
+import { runComplexity } from './commands/complexity';
 import { runConfig } from './commands/config';
+import { runImpact } from './commands/impact';
+import { runSemantic } from './commands/semantic';
+import { analyzeDirectory } from './commands/structure';
+import { buildFileTree, printFileTree } from './commands/tree';
+import { runWarm } from './commands/warm';
 
 const program = new Command();
 
@@ -48,6 +49,15 @@ program
   .argument('[path]', 'Path to analyze', '.')
   .action((fn, path) => {
     runImpact(fn, path);
+  });
+
+program
+  .command('complexity')
+  .description('Calculate cyclomatic complexity')
+  .argument('<file>', 'File to analyze')
+  .argument('[function]', 'Function name (optional)')
+  .action((file, fn) => {
+    runComplexity(file, fn);
   });
 
 program

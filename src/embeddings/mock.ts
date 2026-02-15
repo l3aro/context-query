@@ -1,4 +1,4 @@
-import { EmbeddingProvider } from './types';
+import type { EmbeddingProvider } from './types';
 
 // Mock provider for development without Ollama credentials
 export class MockEmbeddingProvider implements EmbeddingProvider {

@@ -1,4 +1,4 @@
-import { EmbeddingProvider, EmbeddingConfig } from './types';
+import type { EmbeddingProvider, EmbeddingConfig } from './types';
 
 interface OllamaEmbedResponse {
   embeddings: number[][];
