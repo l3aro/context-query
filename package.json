@@ -11,7 +11,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "bin": {
-    "ctxq": "./dist/cli.js"
+    "ctxq": "dist/cli.js"
   },
   "scripts": {
     "test": "bun test",
