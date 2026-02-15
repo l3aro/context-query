@@ -10,10 +10,7 @@ import { runSemantic } from './commands/semantic';
 
 const program = new Command();
 
-program
-  .name('ctxq')
-  .description('Code analysis tool for LLMs')
-  .version('0.1.0');
+program.name('ctxq').description('Code analysis tool for LLMs').version('0.1.0');
 
 program
   .command('tree')

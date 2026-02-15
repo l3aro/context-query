@@ -22,7 +22,7 @@ export function getLanguageFromExtension(filename: string): Language | null {
 
 export function getParser(language: Language): Parser {
   const parser = new Parser();
-  
+
   switch (language) {
     case 'typescript':
       parser.setLanguage(TypeScript.typescript);
@@ -34,14 +34,14 @@ export function getParser(language: Language): Parser {
       parser.setLanguage(Php);
       break;
   }
-  
+
   return parser;
 }
 
 export function parseFile(filePath: string): Parser.Tree | null {
   const language = getLanguageFromExtension(filePath);
   if (!language) return null;
-  
+
   try {
     const code = readFileSync(filePath, 'utf-8');
     const parser = getParser(language);

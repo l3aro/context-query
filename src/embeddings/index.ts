@@ -10,7 +10,7 @@ export { OllamaEmbeddingProvider } from './ollama';
 
 export function createEmbeddingProvider(config?: Partial<EmbeddingConfig>): EmbeddingProvider {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
-  
+
   switch (finalConfig.provider) {
     case 'ollama':
       return new OllamaEmbeddingProvider(finalConfig);

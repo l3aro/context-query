@@ -6,19 +6,15 @@ export interface CallGraph {
 
 export interface FileCallInfo {
   file: string;
-  defines: string[];  // functions/classes defined here
-  calls: string[];    // functions called here
+  defines: string[]; // functions/classes defined here
+  calls: string[]; // functions called here
 }
 
-const CALL_TYPES = new Set([
-  'call_expression',
-  'identifier',
-  'member_call_expression',
-]);
+const CALL_TYPES = new Set(['call_expression', 'identifier', 'member_call_expression']);
 
 function extractCalls(tree: any): string[] {
   const calls: string[] = [];
-  
+
   function walk(node: any) {
     // Check if this is a function call
     if (node.type === 'call_expression') {
@@ -27,7 +23,7 @@ function extractCalls(tree: any): string[] {
         calls.push(funcNode.text);
       }
     }
-    
+
     // Also capture member calls like obj.method()
     if (node.type === 'member_expression' && node.childForFieldName('property')) {
       const prop = node.childForFieldName('property');
@@ -35,25 +31,21 @@ function extractCalls(tree: any): string[] {
         calls.push(prop.text);
       }
     }
-    
+
     for (const child of node.children || []) {
       walk(child);
     }
   }
-  
+
   walk(tree.rootNode);
   return [...new Set(calls)]; // Deduplicate
 }
 
 function extractDefines(tree: any, language: string): string[] {
   const defines: string[] = [];
-  
-  const functionTypes = new Set([
-    'function_declaration',
-    'method_definition',
-    'arrow_function',
-  ]);
-  
+
+  const functionTypes = new Set(['function_declaration', 'method_definition', 'arrow_function']);
+
   function walk(node: any) {
     if (functionTypes.has(node.type)) {
       const nameNode = node.childForFieldName('name');
@@ -61,19 +53,19 @@ function extractDefines(tree: any, language: string): string[] {
         defines.push(nameNode.text);
       }
     }
-    
+
     if (node.type === 'class_declaration') {
       const nameNode = node.childForFieldName('name');
       if (nameNode) {
         defines.push(nameNode.text);
       }
     }
-    
+
     for (const child of node.children || []) {
       walk(child);
     }
   }
-  
+
   walk(tree.rootNode);
   return defines;
 }
@@ -83,12 +75,12 @@ export function analyzeCalls(filePath: string): FileCallInfo {
   if (!language) {
     return { file: filePath, defines: [], calls: [] };
   }
-  
+
   const tree = parseFile(filePath);
   if (!tree) {
     return { file: filePath, defines: [], calls: [] };
   }
-  
+
   return {
     file: filePath,
     defines: extractDefines(tree, language),
@@ -99,22 +91,22 @@ export function analyzeCalls(filePath: string): FileCallInfo {
 export function buildCallGraph(dirPath: string): CallGraph {
   const { readdirSync, statSync } = require('fs');
   const { join } = require('path');
-  
+
   const IGNORE_DIRS = new Set(['node_modules', '.git', '.ctxq', 'dist', 'build']);
   const SUPPORTED_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.php']);
-  
+
   const graph: CallGraph = {};
   const fileInfos: FileCallInfo[] = [];
-  
+
   function walk(dir: string) {
     try {
       const entries = readdirSync(dir);
       for (const entry of entries) {
         if (IGNORE_DIRS.has(entry)) continue;
-        
+
         const fullPath = join(dir, entry);
         const stat = statSync(fullPath);
-        
+
         if (stat.isDirectory()) {
           walk(fullPath);
         } else if (stat.isFile()) {
@@ -129,9 +121,9 @@ export function buildCallGraph(dirPath: string): CallGraph {
       // Skip inaccessible
     }
   }
-  
+
   walk(dirPath);
-  
+
   // Build call graph
   for (const info of fileInfos) {
     for (const def of info.defines) {
@@ -139,7 +131,7 @@ export function buildCallGraph(dirPath: string): CallGraph {
         graph[def] = [];
       }
     }
-    
+
     // For each call, add to caller's list
     for (const call of info.calls) {
       // We need to track which function is making the call
@@ -152,6 +144,6 @@ export function buildCallGraph(dirPath: string): CallGraph {
       }
     }
   }
-  
+
   return graph;
 }

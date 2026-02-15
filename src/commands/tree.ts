@@ -19,13 +19,7 @@ const IGNORE_DIRS = new Set([
   'vendor',
 ]);
 
-const SUPPORTED_EXTENSIONS = new Set([
-  '.ts',
-  '.tsx',
-  '.js',
-  '.jsx',
-  '.php',
-]);
+const SUPPORTED_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.php']);
 
 export function isIgnored(name: string): boolean {
   return IGNORE_DIRS.has(name);
@@ -38,20 +32,20 @@ export function isSupported(filename: string): boolean {
 
 export function buildFileTree(rootPath: string, relativePath: string = ''): FileNode[] {
   const nodes: FileNode[] = [];
-  
+
   try {
     const fullPath = join(rootPath, relativePath);
     const entries = readdirSync(fullPath);
-    
+
     for (const entry of entries) {
       if (isIgnored(entry)) continue;
-      
+
       const entryPath = join(relativePath, entry);
       const fullEntryPath = join(rootPath, entry);
-      
+
       try {
         const stat = lstatSync(fullEntryPath);
-        
+
         if (stat.isDirectory()) {
           const children = buildFileTree(rootPath, entryPath);
           // Only include directories that have supported files
@@ -77,7 +71,7 @@ export function buildFileTree(rootPath: string, relativePath: string = ''): File
   } catch (e) {
     // Directory doesn't exist or can't be read
   }
-  
+
   // Sort: directories first, then files, alphabetically
   return nodes.sort((a, b) => {
     if (a.isDirectory && !b.isDirectory) return -1;
@@ -91,7 +85,7 @@ export function printFileTree(nodes: FileNode[], prefix: string = ''): void {
     const node = nodes[i];
     const isLast = i === nodes.length - 1;
     const connector = isLast ? '└── ' : '├── ';
-    
+
     if (node.isDirectory) {
       console.log(`${prefix}${connector}${node.name}/`);
       const newPrefix = prefix + (isLast ? '    ' : '│   ');

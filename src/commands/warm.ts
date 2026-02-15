@@ -12,41 +12,41 @@ export interface WarmOptions {
 
 export async function runWarm(options: WarmOptions): Promise<void> {
   const { projectPath, provider = 'mock', warmModel } = options;
-  
+
   console.log(`# Building semantic index for: ${projectPath}`);
   console.log('');
-  
+
   // Create embedding provider
   const embeddingProvider = createEmbeddingProvider({
     provider,
     warmModel: warmModel || 'nomic-embed-text-v2-moe',
   });
-  
+
   console.log(`Using provider: ${embeddingProvider.constructor.name}`);
-  
+
   // Check availability
   const available = await embeddingProvider.isAvailable();
   if (!available) {
     console.log('Warning: Embedding provider not available, using mock');
   }
-  
+
   // Analyze project
   console.log('Analyzing code...');
   const units = analyzeDirectory(projectPath);
-  
+
   if (units.length === 0) {
     console.log('No code units found.');
     return;
   }
-  
+
   console.log(`Found ${units.length} code units`);
-  
+
   // Create vector store
   const vectorStore = createVectorStore(projectPath);
   await vectorStore.initialize(embeddingProvider.getDimensions());
-  
+
   console.log('Generating embeddings...');
-  
+
   // Build text for embedding
   const entries = [];
   for (const unit of units) {
@@ -62,7 +62,7 @@ export async function runWarm(options: WarmOptions): Promise<void> {
     } catch {
       // Use basic info if we can't read file
     }
-    
+
     entries.push({
       id: `${unit.file}:${unit.line}:${unit.name}`,
       content,
@@ -72,30 +72,30 @@ export async function runWarm(options: WarmOptions): Promise<void> {
       embedding: [], // Will be filled by provider
     });
   }
-  
+
   // Generate embeddings in batches
   const BATCH_SIZE = 10;
   for (let i = 0; i < entries.length; i += BATCH_SIZE) {
     const batch = entries.slice(i, i + BATCH_SIZE);
-    const texts = batch.map(e => e.content);
-    
+    const texts = batch.map((e) => e.content);
+
     const embeddings = await embeddingProvider.embedBatch(texts);
-    
+
     for (let j = 0; j < batch.length; j++) {
       entries[i + j].embedding = embeddings[j];
     }
-    
+
     const progress = Math.min(i + BATCH_SIZE, entries.length);
     console.log(`  Embedded ${progress}/${entries.length}...`);
   }
-  
+
   // Store in vector DB
   console.log('Storing in vector database...');
   await vectorStore.insert(entries);
-  
+
   console.log('');
   console.log(`✓ Indexed ${entries.length} code units`);
   console.log(`✓ Stored in ${projectPath}/.ctxq/vectors.db`);
-  
+
   vectorStore.close();
 }

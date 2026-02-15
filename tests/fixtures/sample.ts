@@ -2,15 +2,15 @@
 
 class UserService {
   private name: string;
-  
+
   constructor(name: string) {
     this.name = name;
   }
-  
+
   getUser(id: number): User | null {
     return null;
   }
-  
+
   async createUser(data: UserData): Promise<User> {
     return {} as User;
   }

@@ -17,12 +17,12 @@ export const DEFAULT_CONFIG: Config = {
 
 export function loadConfig(projectPath: string): Config {
   const configPath = join(projectPath, '.ctxq', 'config.json');
-  
+
   // Return default if no config exists
   if (!existsSync(configPath)) {
     return DEFAULT_CONFIG;
   }
-  
+
   try {
     const content = readFileSync(configPath, 'utf-8');
     const parsed = JSON.parse(content);
@@ -34,11 +34,11 @@ export function loadConfig(projectPath: string): Config {
 
 export function saveConfig(projectPath: string, config: Config): void {
   const configDir = join(projectPath, '.ctxq');
-  
+
   if (!existsSync(configDir)) {
     mkdirSync(configDir, { recursive: true });
   }
-  
+
   const configPath = join(configDir, 'config.json');
   writeFileSync(configPath, JSON.stringify(config, null, 2));
 }
