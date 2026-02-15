@@ -1,10 +1,9 @@
-import { analyzeDirectory, type CodeUnit } from './structure';
-import { createEmbeddingProvider, MockEmbeddingProvider } from '../embeddings';
-import { createVectorStore, VectorStore } from '../storage/vector';
-import { loadConfig, saveConfig } from '../config';
-import { runConfigInterview } from './config-interview';
 import { readFileSync } from 'fs';
 import { join, relative } from 'path';
+import { loadConfig } from '../config';
+import { createEmbeddingProvider, MockEmbeddingProvider } from '../embeddings';
+import { createVectorStore, VectorStore } from '../storage/vector';
+import { analyzeDirectory, type CodeUnit } from './structure';
 
 export interface WarmOptions {
   projectPath: string;
@@ -13,26 +12,13 @@ export interface WarmOptions {
 }
 
 export async function runWarm(options: WarmOptions): Promise<void> {
-  const { projectPath, provider: cliProvider, warmModel: cliWarmModel } = options;
+  const { projectPath, warmModel: cliWarmModel } = options;
 
   // Load config at start
   const config = loadConfig(projectPath);
 
-  // Determine effective provider: CLI flag > config > default ('mock')
-  const effectiveProvider = cliProvider || config.embeddings.provider || 'mock';
-
   // Determine effective warmModel: CLI flag > config.warmModel > default
   const effectiveWarmModel = cliWarmModel || config.embeddings.warmModel;
-
-  // If provider is 'ollama' AND warmModel is missing/empty, trigger interview
-  if (effectiveProvider === 'ollama' && !effectiveWarmModel) {
-    console.log('\n# Ollama provider selected but warmModel not configured.\n');
-    const partialConfig = await runConfigInterview(projectPath, config.embeddings);
-    // Merge returned partial into config.embeddings
-    config.embeddings = { ...config.embeddings, ...partialConfig };
-    // Save config after interview
-    saveConfig(projectPath, config);
-  }
 
   console.log(`# Building semantic index for: ${projectPath}`);
   console.log('');

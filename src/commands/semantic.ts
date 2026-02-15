@@ -1,43 +1,26 @@
+import { loadConfig } from '../config';
 import { createEmbeddingProvider } from '../embeddings';
 import { createVectorStore } from '../storage/vector';
-import { loadConfig, saveConfig } from '../config';
-import { runConfigInterview } from './config-interview';
 
 export interface SemanticOptions {
   projectPath: string;
   query: string;
-  provider?: 'ollama' | 'mock';
   searchModel?: string;
   limit?: number;
 }
 
 export async function runSemantic(options: SemanticOptions): Promise<void> {
-  const {
-    projectPath,
-    query,
-    provider: cliProvider,
-    searchModel: cliSearchModel,
-    limit = 10,
-  } = options;
+  const { projectPath, query, searchModel: cliSearchModel, limit = 10 } = options;
 
   // Load config at start
   const config = loadConfig(projectPath);
 
-  // Determine effective provider: CLI flag > config > default ('mock')
-  const effectiveProvider = cliProvider || config.embeddings.provider || 'mock';
-
   // Determine effective searchModel: CLI flag > config.searchModel > config.warmModel > default
-  const effectiveSearchModel = cliSearchModel || config.embeddings.searchModel || config.embeddings.warmModel || 'embeddinggemma';
-
-  // If provider is 'ollama' AND warmModel is missing/empty, trigger interview
-  if (effectiveProvider === 'ollama' && !config.embeddings.warmModel) {
-    console.log('\n# Ollama provider selected but warmModel not configured.\n');
-    const partialConfig = await runConfigInterview(projectPath, config.embeddings);
-    // Merge returned partial into config.embeddings
-    config.embeddings = { ...config.embeddings, ...partialConfig };
-    // Save config after interview
-    saveConfig(projectPath, config);
-  }
+  const effectiveSearchModel =
+    cliSearchModel ||
+    config.embeddings.searchModel ||
+    config.embeddings.warmModel ||
+    'embeddinggemma';
 
   console.log(`# Semantic search: "${query}"`);
   console.log('');
@@ -45,7 +28,11 @@ export async function runSemantic(options: SemanticOptions): Promise<void> {
   // Create embedding provider with full config (including apiKey)
   const embeddingProvider = createEmbeddingProvider({
     ...config.embeddings,
-    searchModel: cliSearchModel || config.embeddings.searchModel || config.embeddings.warmModel || 'embeddinggemma',
+    searchModel:
+      cliSearchModel ||
+      config.embeddings.searchModel ||
+      config.embeddings.warmModel ||
+      'embeddinggemma',
   });
 
   // Check availability

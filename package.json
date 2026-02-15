@@ -16,14 +16,14 @@
     "check": "biome check ."
   },
   "dependencies": {
+    "better-sqlite3": "^11.7.0",
     "commander": "^12.1.0",
+    "ollama": "^0.5.14",
+    "sqlite-vec": "^0.1.7-alpha.2",
     "tree-sitter": "^0.21.1",
-    "tree-sitter-typescript": "^0.21.2",
     "tree-sitter-javascript": "^0.21.4",
     "tree-sitter-php": "^0.22.6",
-    "ollama": "^0.5.14",
-    "better-sqlite3": "^11.7.0",
-    "sqlite-vec": "^0.1.7-alpha.2"
+    "tree-sitter-typescript": "^0.21.2"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.15",
