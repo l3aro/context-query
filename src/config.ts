@@ -26,7 +26,14 @@ export function loadConfig(projectPath: string): Config {
   try {
     const content = readFileSync(configPath, 'utf-8');
     const parsed = JSON.parse(content);
-    return { ...DEFAULT_CONFIG, ...parsed };
+    // Deep merge: spread DEFAULT_CONFIG, then spread parsed (overriding defaults)
+    return {
+      ...DEFAULT_CONFIG,
+      embeddings: {
+        ...DEFAULT_CONFIG.embeddings,
+        ...parsed.embeddings,
+      },
+    };
   } catch {
     return DEFAULT_CONFIG;
   }

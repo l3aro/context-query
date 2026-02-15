@@ -7,6 +7,7 @@ import { runCalls } from './commands/calls';
 import { runImpact } from './commands/impact';
 import { runWarm } from './commands/warm';
 import { runSemantic } from './commands/semantic';
+import { runConfig } from './commands/config';
 
 const program = new Command();
 
@@ -64,6 +65,14 @@ program
   .argument('[path]', 'Path to search', '.')
   .action(async (query, path) => {
     await runSemantic({ projectPath: path, query });
+  });
+
+program
+  .command('config')
+  .description('View and edit configuration')
+  .argument('[path]', 'Path to project', '.')
+  .action(async (path) => {
+    await runConfig(path);
   });
 
 program.parse();
