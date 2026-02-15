@@ -52,7 +52,8 @@ export interface DFGInfo {
 }
 
 import type { SyntaxNode } from 'tree-sitter';
-import { getLanguageFromExtension, parseFile } from '../ast/parser';
+import { parseFileCached } from '../ast/cache';
+import { getLanguageFromExtension } from '../ast/parser';
 import { findFunctionNode } from './cfg';
 
 /**
@@ -560,7 +561,7 @@ export function extractDFG(filePath: string, functionName: string): DFGInfo {
     };
   }
 
-  const tree = parseFile(filePath);
+  const tree = parseFileCached(filePath);
   if (!tree) {
     return {
       functionName: functionName,

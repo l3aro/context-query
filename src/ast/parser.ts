@@ -15,12 +15,17 @@ const LANGUAGE_MAP: Record<string, Language> = {
   '.php': 'php',
 };
 
+const parserCache = new Map<Language, Parser>();
+
 export function getLanguageFromExtension(filename: string): Language | null {
   const ext = extname(filename).toLowerCase();
   return LANGUAGE_MAP[ext] || null;
 }
 
 export function getParser(language: Language): Parser {
+  const cached = parserCache.get(language);
+  if (cached) return cached;
+
   const parser = new Parser();
 
   switch (language) {
@@ -35,6 +40,7 @@ export function getParser(language: Language): Parser {
       break;
   }
 
+  parserCache.set(language, parser);
   return parser;
 }
 

@@ -1,5 +1,6 @@
 import type { SyntaxNode, Tree } from 'tree-sitter';
-import { getLanguageFromExtension, parseFile } from '../ast/parser';
+import { parseFileCached } from '../ast/cache';
+import { getLanguageFromExtension } from '../ast/parser';
 
 export interface CallGraph {
   [caller: string]: string[]; // caller -> callees
@@ -77,7 +78,7 @@ export function analyzeCalls(filePath: string): FileCallInfo {
     return { file: filePath, defines: [], calls: [] };
   }
 
-  const tree = parseFile(filePath);
+  const tree = parseFileCached(filePath);
   if (!tree) {
     return { file: filePath, defines: [], calls: [] };
   }

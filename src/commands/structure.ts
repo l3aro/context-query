@@ -1,5 +1,6 @@
 import type { SyntaxNode, Tree } from 'tree-sitter';
-import { getLanguageFromExtension, parseFile } from '../ast/parser';
+import { parseFileCached } from '../ast/cache';
+import { getLanguageFromExtension } from '../ast/parser';
 
 export interface CodeUnit {
   type: 'function' | 'class' | 'method';
@@ -72,7 +73,7 @@ export function analyzeFile(filePath: string): CodeUnit[] {
   const language = getLanguageFromExtension(filePath);
   if (!language) return [];
 
-  const tree = parseFile(filePath);
+  const tree = parseFileCached(filePath);
   if (!tree) return [];
 
   return extractUnits(tree, language, filePath);

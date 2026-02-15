@@ -1,5 +1,6 @@
 import type { SyntaxNode, Tree } from 'tree-sitter';
-import { getLanguageFromExtension, parseFile } from '../ast/parser';
+import { parseFileCached } from '../ast/cache';
+import { getLanguageFromExtension } from '../ast/parser';
 
 export interface CFGBlock {
   id: number;
@@ -293,7 +294,7 @@ export function extractCFG(filePath: string, functionName: string): CFGResult {
     };
   }
 
-  const tree = parseFile(filePath);
+  const tree = parseFileCached(filePath);
   if (!tree) {
     return {
       function: functionName,
@@ -367,7 +368,7 @@ export function buildFullCFG(filePath: string, functionName: string): CFGInfo | 
     return null;
   }
 
-  const tree = parseFile(filePath);
+  const tree = parseFileCached(filePath);
   if (!tree) return null;
 
   const functionInfo = findFunctionNode(tree, functionName);
