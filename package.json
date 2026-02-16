@@ -1,7 +1,8 @@
 {
   "name": "context-query",
   "version": "0.1.0",
-  "description": "Code analysis tool for LLMs - TypeScript port",
+  "description": "Code analysis tool for LLMs",
+  "private": false,
   "type": "module",
   "files": [
     "dist"
