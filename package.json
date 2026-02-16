@@ -50,5 +50,20 @@
     "@types/node": "^22.10.0",
     "semantic-release": "^25.0.3",
     "typescript": "^5.7.2"
-  }
+  },
+  "trustedDependencies": [
+    "tree-sitter",
+    "tree-sitter-c",
+    "tree-sitter-cpp",
+    "tree-sitter-go",
+    "tree-sitter-java",
+    "tree-sitter-javascript",
+    "tree-sitter-php",
+    "tree-sitter-python",
+    "tree-sitter-rust",
+    "tree-sitter-typescript",
+    "@tree-sitter-grammars/tree-sitter-kotlin",
+    "better-sqlite3",
+    "sqlite-vec"
+  ]
 }
