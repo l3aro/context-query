@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { loadConfig } from '../config';
 import { createEmbeddingProvider } from '../embeddings';
 import { extractDFG } from '../graph/dfg';
-import { createVectorStore } from '../storage/vector';
+import { createVectorStore, type VectorEntry } from '../storage/vector';
 import { analyzeDirectory } from './structure';
 
 export interface WarmOptions {
@@ -75,7 +75,7 @@ export async function runWarm(options: WarmOptions): Promise<void> {
   console.log('Generating embeddings...');
 
   // Build text for embedding
-  const entries = [];
+  const entries: VectorEntry[] = [];
   for (const unit of units) {
     // Try to get the actual code
     let content = `${unit.type} ${unit.name}`;
@@ -117,19 +117,28 @@ export async function runWarm(options: WarmOptions): Promise<void> {
     const embeddings = await embeddingProvider.embedBatch(texts);
 
     for (let j = 0; j < batch.length; j++) {
-      entries[i + j].embedding = embeddings[j];
+      const entry = entries[i + j]!;
+      entry.embedding = embeddings[j]!;
     }
 
     const progress = Math.min(i + BATCH_SIZE, entries.length);
     console.log(`  Embedded ${progress}/${entries.length}...`);
   }
 
+  // Deduplicate entries by ID (some functions may appear multiple times)
+  const uniqueEntries = Array.from(new Map(entries.map((e) => [e.id, e])).values());
+
+  if (uniqueEntries.length < entries.length) {
+    console.log(`  Deduplicated ${entries.length - uniqueEntries.length} duplicate entries`);
+  }
+
   // Store in vector DB
   console.log('Storing in vector database...');
-  await vectorStore.insert(entries);
+  await vectorStore.clear();
+  await vectorStore.insert(uniqueEntries);
 
   console.log('');
-  console.log(`✓ Indexed ${entries.length} code units`);
+  console.log(`✓ Indexed ${uniqueEntries.length} code units`);
   console.log(`✓ Stored in ${projectPath}/.ctxq/vectors.db`);
 
   vectorStore.close();

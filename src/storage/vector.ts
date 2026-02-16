@@ -144,6 +144,25 @@ export class VectorStore {
     }));
   }
 
+  async getDimensions(): Promise<number | null> {
+    if (!this.db) {
+      return null;
+    }
+
+    // Get the embedding column definition to extract dimensions
+    const row = this.db
+      .query("SELECT sql FROM sqlite_master WHERE type='table' AND name='vectors'")
+      .get() as { sql: string } | null;
+
+    if (!row) {
+      return null;
+    }
+
+    // Parse dimensions from "embedding float[N]"
+    const match = row.sql.match(/embedding float\[(\d+)\]/);
+    return match ? parseInt(match[1]!, 10) : null;
+  }
+
   async clear(): Promise<void> {
     if (!this.db) {
       throw new Error('Vector store not initialized');
