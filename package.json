@@ -21,8 +21,7 @@
     "format": "biome format --write .",
     "lint": "biome lint .",
     "check": "biome check .",
-    "release": "semantic-release",
-    "postinstall": "npm rebuild"
+    "release": "semantic-release"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
