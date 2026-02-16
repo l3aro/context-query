@@ -22,7 +22,7 @@
     "lint": "biome lint .",
     "check": "biome check .",
     "release": "semantic-release",
-    "postinstall": "bun pm rebuild"
+    "postinstall": "npm rebuild"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
