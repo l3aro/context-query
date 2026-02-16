@@ -13,8 +13,12 @@ skill:
     - embeddings
     - code-analysis
     - ollama
+    - huggingface
     - vector-database
     - sqlite-vec
+    - complexity
+    - data-flow
+    - program-slicing
 
   documentation:
     skills: "SKILLS.md"
@@ -37,18 +41,32 @@ skill:
       file: "SKILLS.md"
       section: "Semantic Search"
 
-    - name: "Call Graph Analysis"
+    - name: "Call Graph"
       description: "Finding function callers and dependencies"
       file: "SKILLS.md"
       section: "Call Graph"
 
+    - name: "Complexity Analysis"
+      description: "Calculate cyclomatic complexity"
+      file: "SKILLS.md"
+      section: "Complexity Analysis"
+
+    - name: "Data Flow Analysis"
+      description: "Extract data flow graphs and program slices"
+      file: "SKILLS.md"
+      section: "Data Flow Analysis"
+
   capabilities:
     - "Parse TypeScript, JavaScript, and PHP with tree-sitter"
-    - "Build semantic embeddings with Ollama"
+    - "Build semantic embeddings with Ollama or HuggingFace"
     - "Vector search over codebase"
     - "Analyze function and class structure"
     - "Build call graphs"
     - "Find impact/callers of functions"
+    - "Calculate cyclomatic complexity for functions"
+    - "Extract data flow graphs (DFG)"
+    - "Program slicing (backward/forward analysis)"
+    - "Parse and analyze import statements"
 
   triggers:
     - "ctxq"
@@ -58,20 +76,29 @@ skill:
     - "tree-sitter"
     - "embeddings"
     - "ollama"
+    - "huggingface"
     - "codebase search"
     - "find function callers"
     - "code structure"
+    - "cyclomatic complexity"
+    - "data flow graph"
+    - "program slice"
+    - "code slicing"
+    - "import analysis"
 
   repository:
     url: "https://github.com/l3aro/context-query"
     license: "MIT"
 
   ai_usage:
-    instruction: "When helping with ctxq, reference SKILLS.md for usage patterns and AGENTS.md for architecture"
+    instruction: "When helping with ctxq, reference SKILLS.md for usage patterns and AGENTS.md for architecture. Supports multiple embedding providers: mock, ollama, and huggingface."
     quick_start: |
       # CLI
       bun run src/cli.ts tree           # File structure
       bun run src/cli.ts structure      # Functions/classes
+      bun run src/cli.ts complexity      # Cyclomatic complexity
+      bun run src/cli.ts dfg            # Data flow graph
+      bun run src/cli.ts slice          # Program slicing
       bun run src/cli.ts warm           # Build semantic index
       bun run src/cli.ts semantic <q>   # Semantic search
 

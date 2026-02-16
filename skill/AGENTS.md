@@ -38,6 +38,10 @@ src/
 │   ├── structure.ts    # analyzeDirectory(path) → CodeUnit[]
 │   ├── calls.ts       # runCalls(path) - build call graph
 │   ├── impact.ts       # runImpact(fn, path) - find callers
+│   ├── complexity.ts   # runComplexity(file, fn) - cyclomatic complexity
+│   ├── dfg.ts         # runDfg(file, fn) - data flow graph
+│   ├── slice.ts       # runSlice(options) - program slicing
+│   ├── imports.ts     # runImports(file, lang) - import parsing
 │   ├── warm.ts        # runWarm({projectPath}) - build index
 │   ├── semantic.ts    # runSemantic({projectPath, query})
 │   └── config.ts      # runConfig(path)
@@ -45,11 +49,16 @@ src/
 │   ├── index.ts       # createEmbeddingProvider(config)
 │   ├── types.ts       # EmbeddingProvider interface
 │   ├── ollama.ts      # OllamaEmbeddingProvider
+│   ├── huggingface.ts # HuggingFaceEmbeddingProvider
 │   └── mock.ts        # MockEmbeddingProvider (dev)
 ├── storage/
 │   └── vector.ts      # createVectorStore(path) → VectorStore
 ├── graph/
-│   └── calls.ts       # buildCallGraph(path)
+│   ├── calls.ts       # buildCallGraph(path)
+│   ├── imports.ts     # parseImports(file) - import extraction
+│   ├── cfg.ts         # extractCFG(file, fn) - control flow graph
+│   ├── dfg.ts         # extractDFG(file, fn) - data flow graph
+│   └── pdg.ts         # extractPDG(file, fn) - program dependency graph
 └── ast/
     └── parser.ts      # parseFile(path), parseCode(code, lang)
 ```
@@ -110,7 +119,7 @@ interface VectorStore {
 ```typescript
 interface Config {
   embeddings: {
-    provider: 'ollama' | 'mock';
+    provider: 'ollama' | 'huggingface' | 'mock';
     model: string;
     warmModel: string;
     apiKey?: string;
@@ -162,6 +171,20 @@ interface Config {
 2. Build graph of call relationships
 3. `impact` command finds all units that reference target
 
+### Complexity Analysis Flow
+
+1. Extract Control Flow Graph (CFG) for function
+2. Calculate cyclomatic complexity: M = E - N + 2P
+   - E = edges, N = nodes, P = connected components
+3. Return complexity and block count
+
+### Data Flow Analysis Flow
+
+1. Extract Program Dependency Graph (PDG)
+2. Build data flow edges (definition → use)
+3. `dfg` command shows variables and their flow
+4. `slice` command traverses PDG for backward/forward analysis
+
 ### Mock Provider
 
 - Deterministic embeddings for development
@@ -177,6 +200,7 @@ interface Config {
 | tree-sitter-typescript | TS/JS grammar |
 | tree-sitter-php | PHP grammar |
 | ollama | Embedding API client |
+| @huggingface/inference | HuggingFace API client |
 | sqlite-vec | Vector storage |
 
 ## Development
@@ -204,6 +228,8 @@ bun run lint
 - Call graph is basic (no cross-file scope tracking)
 - Impact analysis is simplified (name matching only)
 - Embedding quality depends on Ollama model
+- Data flow analysis is intra-procedural only
+- Complexity calculation uses cyclomatic complexity (not cognitive complexity)
 
 ## Key Insights for AI Agents
 
@@ -213,12 +239,16 @@ bun run lint
 - Need to find function callers/dependencies
 - Explore code structure (functions, classes)
 - Build vector index for LLM context
+- User wants to understand code complexity
+- Need to trace variable data flow
+- Want to find code that affects/affected by specific lines
 
 ### When NOT to Suggest
 
 - Need full IDE features (use LSP instead)
 - Real-time code completion
 - Refactoring tools
+- Cross-module data flow analysis
 
 ### Integration Patterns
 

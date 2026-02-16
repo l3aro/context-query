@@ -92,8 +92,8 @@ This:
 - Stores in `.ctxq/vectors.db`
 
 Options:
-- `--provider ollama|mock` - Embedding provider (default: mock)
-- `--warmModel <name>` - Ollama embedding model
+- `--provider ollama|huggingface|mock` - Embedding provider (default: mock)
+- `--warmModel <name>` - Embedding model name
 
 ### 6. Semantic Search (semantic)
 
@@ -110,6 +110,9 @@ bun run src/cli.ts semantic "authentication middleware"
 
 Returns functions/classes related to the query semantically.
 
+Options:
+- `--provider ollama|huggingface|mock` - Embedding provider
+
 ### 7. Configuration (config)
 
 View/edit configuration:
@@ -120,18 +123,112 @@ bun run src/cli.ts config [path]
 
 Config stored in `.ctxq/config.json`.
 
+### 8. Complexity Analysis (complexity)
+
+Calculate cyclomatic complexity for functions:
+
+```bash
+bun run src/cli.ts complexity <file> [functionName]
+```
+
+Examples:
+```bash
+# All functions in file
+bun run src/cli.ts complexity src/cli.ts
+
+# Specific function
+bun run src/cli.ts complexity src/cli.ts parse
+```
+
+Output:
+```
+parseFile: complexity:3, blocks:4
+buildFileTree: complexity:2, blocks:2
+```
+
+### 9. Data Flow Graph (dfg)
+
+Extract data flow graph for a function:
+
+```bash
+bun run src/cli.ts dfg <file> <functionName>
+```
+
+Example:
+```bash
+bun run src/cli.ts dfg src/cli.ts parse
+```
+
+Returns:
+- Variables used in the function
+- Variable references (definition and usage locations)
+- Data flow edges (how data flows between definitions and uses)
+
+### 10. Program Slicing (slice)
+
+Find code that affects or is affected by a specific line:
+
+```bash
+bun run src/cli.ts slice <file> <function> <line> [options]
+```
+
+Options:
+- `--direction backward|forward` - Slice direction (default: backward)
+- `--var <variable>` - Trace specific variable only
+- `--lang <language>` - Language (auto-detected from extension)
+
+Examples:
+```bash
+# Backward slice - what affects line 42
+bun run src/cli.ts slice src/cli.ts parse 42
+
+# Forward slice - what is affected by line 42
+bun run src/cli.ts slice src/cli.ts parse 42 --direction forward
+
+# Trace specific variable
+bun run src/cli.ts slice src/cli.ts parse 42 --var config
+```
+
+Backward slice finds all statements that could affect the target line.
+Forward slice finds all statements that could be affected by the target line.
+
+### 11. Import Analysis (imports)
+
+Parse imports from a source file:
+
+```bash
+bun run src/cli.ts imports <file> [--lang <language>]
+```
+
+Example:
+```bash
+bun run src/cli.ts imports src/cli.ts
+```
+
+Returns:
+```json
+{
+  "file": "src/cli.ts",
+  "imports": [
+    { "name": "Command", "type": "default", "source": "commander" },
+    { "name": "runCalls", "type": "named", "source": "./commands/calls" }
+  ]
+}
+```
+
 ## Programmatic API
 
 ### Embedding Provider
 
 ```typescript
-import { createEmbeddingProvider, MockEmbeddingProvider, OllamaEmbeddingProvider } from './embeddings/index.ts';
+import { createEmbeddingProvider, MockEmbeddingProvider, OllamaEmbeddingProvider, HuggingFaceEmbeddingProvider } from './embeddings/index.ts';
 
-// Create provider
+// Create provider - supports 'ollama', 'huggingface', or 'mock'
 const provider = createEmbeddingProvider({
-  provider: 'ollama',  // or 'mock'
+  provider: 'ollama',  // or 'huggingface', 'mock'
   model: 'nomic-embed-text-v2-moe',
-  apiKey: 'optional',
+  apiKey: 'optional',  // Required for HuggingFace
+  baseURL: 'http://localhost:11434',  // For Ollama
 });
 
 // Check availability
@@ -233,6 +330,59 @@ bun run src/cli.ts calls .
 bun run src/cli.ts impact validateToken .
 ```
 
+## Complexity Analysis
+
+### Calculate Complexity
+
+```bash
+# All functions in a file
+bun run src/cli.ts complexity src/commands/structure.ts
+
+# Specific function
+bun run src/cli.ts complexity src/commands/structure.ts analyzeDirectory
+```
+
+### Understanding Complexity
+
+Cyclomatic complexity measures the number of linearly independent paths through code:
+
+| Complexity | Risk Level |
+|------------|------------|
+| 1-10 | Low - simple, well-structured |
+| 11-20 | Moderate - more complex |
+| 21+ | High - consider refactoring |
+
+## Data Flow Analysis
+
+### Data Flow Graph (DFG)
+
+Shows how data moves through a function:
+
+```bash
+bun run src/cli.ts dfg src/cli.ts parse
+```
+
+Returns:
+- Variables defined and used
+- Data flow edges (definition → use relationships)
+
+### Program Slicing
+
+Backward slice: Find statements that affect a target line
+```bash
+bun run src/cli.ts slice src/cli.ts parse 42
+```
+
+Forward slice: Find statements affected by a target line
+```bash
+bun run src/cli.ts slice src/cli.ts parse 42 --direction forward
+```
+
+Variable-specific slice: Trace a specific variable
+```bash
+bun run src/cli.ts slice src/cli.ts parse 42 --var config
+```
+
 ## Configuration
 
 Config file: `.ctxq/config.json`
@@ -249,6 +399,14 @@ Config file: `.ctxq/config.json`
 }
 ```
 
+### Provider Options
+
+| Provider | Description | API Key Required |
+|----------|-------------|-----------------|
+| `mock` | Deterministic embeddings for development | No |
+| `ollama` | Local Ollama server | No |
+| `huggingface` | Local ONNX model (WebGPU) | No |
+
 ## Common Patterns
 
 ### When to Use Each Command
@@ -260,6 +418,9 @@ Config file: `.ctxq/config.json`
 | Understand function dependencies | `ctxq calls` then `ctxq impact <fn>` |
 | Search by functionality (not keywords) | `ctxq warm` then `ctxq semantic` |
 | Find where function is called | `ctxq impact <functionName>` |
+| Measure code complexity | `ctxq complexity <file>` |
+| Trace variable data flow | `ctxq dfg <file> <fn>` |
+| Find code affecting a line | `ctxq slice <file> <fn> <line>` |
 
 ### Performance Tips
 
@@ -294,6 +455,8 @@ Config file: `.ctxq/config.json`
 # Quick start
 bun run src/cli.ts tree
 bun run src/cli.ts structure
+bun run src/cli.ts complexity src/cli.ts
+bun run src/cli.ts dfg src/cli.ts parse
 bun run src/cli.ts warm
 bun run src/cli.ts semantic "search query"
 
