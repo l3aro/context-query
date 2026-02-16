@@ -27,7 +27,10 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: bun install
+        run: |
+          rm -rf node_modules
+          bun install
+          bunx node-gyp-build
 
       - name: Run tests
         run: bun test
