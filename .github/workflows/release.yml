@@ -27,10 +27,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: |
-          rm -rf node_modules
-          bun install
-          cd node_modules/tree-sitter && bunx node-gyp-build
+        run: npm install
 
       - name: Run tests
         run: bun test
