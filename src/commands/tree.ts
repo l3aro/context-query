@@ -19,7 +19,23 @@ const IGNORE_DIRS = new Set([
   'vendor',
 ]);
 
-const SUPPORTED_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.php']);
+const SUPPORTED_EXTENSIONS = new Set([
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.php',
+  '.py',
+  '.rs',
+  '.c',
+  '.cpp',
+  '.cc',
+  '.cxx',
+  '.go',
+  '.java',
+  '.kt',
+  '.kts',
+]);
 
 export function isIgnored(name: string): boolean {
   return IGNORE_DIRS.has(name);
@@ -83,6 +99,8 @@ export function buildFileTree(rootPath: string, relativePath: string = ''): File
 export function printFileTree(nodes: FileNode[], prefix: string = ''): void {
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
+    if (!node) continue;
+
     const isLast = i === nodes.length - 1;
     const connector = isLast ? '└── ' : '├── ';
 

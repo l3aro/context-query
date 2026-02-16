@@ -12,22 +12,86 @@ export interface FileCallInfo {
   calls: string[]; // functions called here
 }
 
-const _CALL_TYPES = new Set(['call_expression', 'identifier', 'member_call_expression']);
+const DEFINE_TYPES: Record<string, { functions: string[]; classes: string[] }> = {
+  typescript: {
+    functions: ['function_declaration', 'method_definition', 'arrow_function'],
+    classes: ['class_declaration'],
+  },
+  javascript: {
+    functions: ['function_declaration', 'method_definition', 'arrow_function'],
+    classes: ['class_declaration'],
+  },
+  php: {
+    functions: ['function_declaration', 'method_definition'],
+    classes: ['class_declaration'],
+  },
+  python: {
+    functions: ['function_definition', 'async_function_definition'],
+    classes: ['class_definition'],
+  },
+  rust: {
+    functions: ['function_item'],
+    classes: ['struct_item', 'impl_item'],
+  },
+  c: {
+    functions: ['function_definition'],
+    classes: ['struct_specifier'],
+  },
+  cpp: {
+    functions: ['function_definition'],
+    classes: ['class_specifier'],
+  },
+  go: {
+    functions: ['function_declaration'],
+    classes: ['type_specification'],
+  },
+  java: {
+    functions: ['method_declaration'],
+    classes: ['class_declaration'],
+  },
+  kotlin: {
+    functions: ['function_declaration'],
+    classes: ['class_declaration'],
+  },
+};
 
-function extractCalls(tree: Tree): string[] {
+const CALL_TYPES: Record<string, string[]> = {
+  typescript: ['call_expression', 'member_expression'],
+  javascript: ['call_expression', 'member_expression'],
+  php: ['call_expression', 'member_call_expression'],
+  python: ['call', 'attribute'],
+  rust: ['call_expression', 'field_expression'],
+  c: ['call_expression'],
+  cpp: ['call_expression'],
+  go: ['call_expression'],
+  java: ['method_invocation'],
+  kotlin: ['call_expression'],
+};
+
+function extractCalls(tree: Tree, language: string): string[] {
   const calls: string[] = [];
+  const callTypes = new Set(CALL_TYPES[language] ?? ['call_expression']);
 
   function walk(node: SyntaxNode) {
-    // Check if this is a function call
-    if (node.type === 'call_expression') {
-      const funcNode = node.childForFieldName('function');
+    if (callTypes.has(node.type)) {
+      const funcNode =
+        node.childForFieldName('function') ||
+        node.childForFieldName('name') ||
+        node.childForFieldName('method');
       if (funcNode) {
         calls.push(funcNode.text);
+      } else if (node.type === 'call' && node.childForFieldName('function')) {
+        const func = node.childForFieldName('function');
+        if (func) calls.push(func.text);
       }
     }
 
-    // Also capture member calls like obj.method()
-    if (node.type === 'member_expression' && node.childForFieldName('property')) {
+    if (
+      (node.type === 'member_expression' ||
+        node.type === 'field_expression' ||
+        node.type === 'attribute') &&
+      node.childForFieldName('property')
+    ) {
       const prop = node.childForFieldName('property');
       if (prop) {
         calls.push(prop.text);
@@ -43,10 +107,14 @@ function extractCalls(tree: Tree): string[] {
   return [...new Set(calls)]; // Deduplicate
 }
 
-function extractDefines(tree: Tree, _language: string): string[] {
+function extractDefines(tree: Tree, language: string): string[] {
   const defines: string[] = [];
+  const types = DEFINE_TYPES[language];
 
-  const functionTypes = new Set(['function_declaration', 'method_definition', 'arrow_function']);
+  if (!types) return defines;
+
+  const functionTypes = new Set(types.functions);
+  const classTypes = new Set(types.classes);
 
   function walk(node: SyntaxNode) {
     if (functionTypes.has(node.type)) {
@@ -56,7 +124,7 @@ function extractDefines(tree: Tree, _language: string): string[] {
       }
     }
 
-    if (node.type === 'class_declaration') {
+    if (classTypes.has(node.type)) {
       const nameNode = node.childForFieldName('name');
       if (nameNode) {
         defines.push(nameNode.text);
@@ -86,7 +154,7 @@ export function analyzeCalls(filePath: string): FileCallInfo {
   return {
     file: filePath,
     defines: extractDefines(tree, language),
-    calls: extractCalls(tree),
+    calls: extractCalls(tree, language),
   };
 }
 
@@ -95,7 +163,23 @@ export function buildCallGraph(dirPath: string): CallGraph {
   const { join } = require('node:path');
 
   const IGNORE_DIRS = new Set(['node_modules', '.git', '.ctxq', 'dist', 'build']);
-  const SUPPORTED_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.php']);
+  const SUPPORTED_EXT = new Set([
+    '.ts',
+    '.tsx',
+    '.js',
+    '.jsx',
+    '.php',
+    '.py',
+    '.rs',
+    '.c',
+    '.cpp',
+    '.cc',
+    '.cxx',
+    '.go',
+    '.java',
+    '.kt',
+    '.kts',
+  ]);
 
   const graph: CallGraph = {};
   const fileInfos: FileCallInfo[] = [];

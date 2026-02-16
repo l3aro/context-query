@@ -22,6 +22,34 @@ const TYPE_KEYWORDS = {
     function: ['function_declaration', 'method_definition'],
     class: ['class_declaration'],
   },
+  python: {
+    function: ['function_definition', 'async_function_definition'],
+    class: ['class_definition'],
+  },
+  rust: {
+    function: ['function_item'],
+    class: ['struct_item', 'impl_item'],
+  },
+  c: {
+    function: ['function_definition'],
+    class: ['struct_specifier', 'union_specifier'],
+  },
+  cpp: {
+    function: ['function_definition'],
+    class: ['class_specifier'],
+  },
+  go: {
+    function: ['function_declaration'],
+    class: ['type_specification'],
+  },
+  java: {
+    function: ['method_declaration'],
+    class: ['class_declaration'],
+  },
+  kotlin: {
+    function: ['function_declaration'],
+    class: ['class_declaration'],
+  },
 };
 
 function _getNodeText(tree: Tree, _node: SyntaxNode): string {
@@ -79,35 +107,66 @@ export function analyzeFile(filePath: string): CodeUnit[] {
   return extractUnits(tree, language, filePath);
 }
 
+const IGNORE_DIRS = new Set(['node_modules', '.git', '.ctxq', 'dist', 'build']);
+
+const SUPPORTED_EXT = new Set([
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.php',
+  '.py',
+  '.rs',
+  '.c',
+  '.cpp',
+  '.cc',
+  '.cxx',
+  '.go',
+  '.java',
+  '.kt',
+  '.kts',
+]);
+
+function isIgnored(name: string): boolean {
+  return IGNORE_DIRS.has(name);
+}
+
+function isSupportedFile(filename: string): boolean {
+  const ext = filename.substring(filename.lastIndexOf('.'));
+  return SUPPORTED_EXT.has(ext);
+}
+
 export function analyzeDirectory(dirPath: string): CodeUnit[] {
   const { readdirSync, statSync } = require('node:fs');
   const { join } = require('node:path');
   const units: CodeUnit[] = [];
 
-  const IGNORE_DIRS = new Set(['node_modules', '.git', '.ctxq', 'dist', 'build']);
-  const SUPPORTED_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.php']);
+  function processEntry(fullPath: string): CodeUnit[] {
+    if (!isSupportedFile(fullPath)) return [];
+    return analyzeFile(fullPath);
+  }
 
   function walk(dir: string) {
+    let entries: string[];
     try {
-      const entries = readdirSync(dir);
-      for (const entry of entries) {
-        if (IGNORE_DIRS.has(entry)) continue;
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
 
-        const fullPath = join(dir, entry);
-        const stat = statSync(fullPath);
+    for (const entry of entries) {
+      if (isIgnored(entry)) continue;
 
-        if (stat.isDirectory()) {
-          walk(fullPath);
-        } else if (stat.isFile()) {
-          const ext = entry.substring(entry.lastIndexOf('.'));
-          if (SUPPORTED_EXT.has(ext)) {
-            const fileUnits = analyzeFile(fullPath);
-            units.push(...fileUnits);
-          }
-        }
+      const fullPath = join(dir, entry);
+      const stat = statSync(fullPath);
+
+      if (stat.isDirectory()) {
+        walk(fullPath);
+        continue;
       }
-    } catch (_e) {
-      // Skip inaccessible directories
+
+      if (!stat.isFile()) continue;
+      units.push(...processEntry(fullPath));
     }
   }
 

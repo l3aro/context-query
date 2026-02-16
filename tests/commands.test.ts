@@ -29,8 +29,8 @@ describe('tree command', () => {
     expect(isSupported('file.php')).toBe(true);
   });
 
-  test('isSupported returns false for .py files', () => {
-    expect(isSupported('file.py')).toBe(false);
+  test('isSupported returns true for .py files', () => {
+    expect(isSupported('file.py')).toBe(true);
   });
 
   test('buildFileTree returns nodes for test fixtures', () => {
