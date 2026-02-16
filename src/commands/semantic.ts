@@ -7,20 +7,23 @@ export interface SemanticOptions {
   query: string;
   searchModel?: string;
   limit?: number;
+  provider?: 'ollama' | 'mock' | 'huggingface';
 }
 
 export async function runSemantic(options: SemanticOptions): Promise<void> {
-  const { projectPath, query, searchModel: cliSearchModel, limit = 10 } = options;
+  const {
+    projectPath,
+    query,
+    searchModel: cliSearchModel,
+    limit = 10,
+    provider: cliProvider,
+  } = options;
 
   // Load config at start
   const config = loadConfig(projectPath);
 
-  // Determine effective searchModel: CLI flag > config.searchModel > config.warmModel > default
-  const _effectiveSearchModel =
-    cliSearchModel ||
-    config.embeddings.searchModel ||
-    config.embeddings.warmModel ||
-    'embeddinggemma';
+  // Determine effective provider: CLI flag > config > default
+  const effectiveProvider = cliProvider || config.embeddings.provider || 'mock';
 
   console.log(`# Semantic search: "${query}"`);
   console.log('');
@@ -28,6 +31,7 @@ export async function runSemantic(options: SemanticOptions): Promise<void> {
   // Create embedding provider with full config (including apiKey)
   const embeddingProvider = createEmbeddingProvider({
     ...config.embeddings,
+    provider: effectiveProvider,
     searchModel:
       cliSearchModel ||
       config.embeddings.searchModel ||

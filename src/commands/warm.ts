@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../config';
 import { createEmbeddingProvider } from '../embeddings';
@@ -8,18 +8,36 @@ import { analyzeDirectory } from './structure';
 
 export interface WarmOptions {
   projectPath: string;
-  provider?: 'ollama' | 'mock';
+  provider?: 'ollama' | 'mock' | 'huggingface';
   warmModel?: string;
 }
 
 export async function runWarm(options: WarmOptions): Promise<void> {
-  const { projectPath, warmModel: cliWarmModel } = options;
+  const { projectPath, warmModel: cliWarmModel, provider: cliProvider } = options;
+  const configPath = join(projectPath, '.ctxq', 'config.json');
+  const configExists = existsSync(configPath);
+
+  // No config file and no CLI provider - run interview
+  if (!configExists && !cliProvider) {
+    console.log('# Welcome to context-query!');
+    console.log('');
+    console.log("No config found. Let's set up your embedding provider.");
+    console.log('');
+    console.log('Available providers:');
+    console.log('  1. mock    - No setup needed (for development)');
+    console.log('  2. ollama  - Requires Ollama running locally');
+    console.log('  3. huggingface - Downloads model (~300MB) on first use');
+    console.log('');
+    console.log('Run with: ctxq warm . --provider <choice>');
+    console.log('Example: ctxq warm . --provider mock');
+    return;
+  }
 
   // Load config at start
   const config = loadConfig(projectPath);
 
-  // Determine effective warmModel: CLI flag > config.warmModel > default
-  const _effectiveWarmModel = cliWarmModel || config.embeddings.warmModel;
+  // Determine effective provider: CLI flag > config > default
+  const effectiveProvider = cliProvider || config.embeddings.provider || 'mock';
 
   console.log(`# Building semantic index for: ${projectPath}`);
   console.log('');
@@ -27,6 +45,7 @@ export async function runWarm(options: WarmOptions): Promise<void> {
   // Create embedding provider with full config (including apiKey)
   const embeddingProvider = createEmbeddingProvider({
     ...config.embeddings,
+    provider: effectiveProvider,
     warmModel: cliWarmModel || config.embeddings.warmModel || 'nomic-embed-text-v2-moe',
   });
 

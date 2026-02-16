@@ -1,9 +1,16 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { EmbeddingConfig } from '../embeddings/types';
+import type { EmbeddingConfig } from './embeddings/types';
 
 export interface Config {
   embeddings: EmbeddingConfig;
+  providerDefaults?: {
+    huggingface?: {
+      warmModel: string;
+      searchModel: string;
+      baseUrl: string;
+    };
+  };
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -12,6 +19,13 @@ export const DEFAULT_CONFIG: Config = {
     warmModel: 'nomic-embed-text-v2-moe',
     searchModel: 'embeddinggemma',
     baseUrl: 'http://localhost:11434',
+  },
+  providerDefaults: {
+    huggingface: {
+      warmModel: 'onnx-community/embeddinggemma-300m-ONNX',
+      searchModel: 'onnx-community/embeddinggemma-300m-ONNX',
+      baseUrl: 'https://api-inference.huggingface.co',
+    },
   },
 };
 

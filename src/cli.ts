@@ -101,8 +101,12 @@ program
   .command('warm')
   .description('Build semantic index')
   .argument('[path]', 'Path to analyze', '.')
-  .action(async (path) => {
-    await runWarm({ projectPath: path });
+  .option('--provider <provider>', 'Embedding provider: ollama, huggingface, or mock')
+  .action(async (path, options) => {
+    await runWarm({
+      projectPath: path,
+      provider: options.provider as 'ollama' | 'mock' | 'huggingface' | undefined,
+    });
   });
 
 program
@@ -110,8 +114,13 @@ program
   .description('Semantic code search')
   .argument('<query>', 'Search query')
   .argument('[path]', 'Path to search', '.')
-  .action(async (query, path) => {
-    await runSemantic({ projectPath: path, query });
+  .option('--provider <provider>', 'Embedding provider: ollama, huggingface, or mock')
+  .action(async (query, path, options) => {
+    await runSemantic({
+      projectPath: path,
+      query,
+      provider: options.provider as 'ollama' | 'mock' | 'huggingface' | undefined,
+    });
   });
 
 program

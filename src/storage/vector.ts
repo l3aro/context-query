@@ -46,6 +46,15 @@ export class VectorStore {
     // Load sqlite-vec extension
     sqliteVec.load(this.db);
 
+    // Clear existing table if dimensions have changed
+    const existingDimensions = await this.getDimensions();
+    if (existingDimensions && existingDimensions !== this.dimensions) {
+      console.log(
+        `Dimension mismatch detected: clearing existing vectors (was ${existingDimensions}, now ${this.dimensions})`,
+      );
+      await this.db.exec('DROP TABLE IF EXISTS vectors');
+    }
+
     // Create virtual table if not exists
     this.db.exec(`
       CREATE VIRTUAL TABLE IF NOT EXISTS vectors USING vec0(

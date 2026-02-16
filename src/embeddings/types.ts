@@ -21,7 +21,7 @@ export interface EmbeddingProvider {
 }
 
 export interface EmbeddingConfig {
-  provider: 'ollama' | 'mock';
+  provider: 'ollama' | 'mock' | 'huggingface';
   warmModel: string; // Model for indexing
   searchModel: string; // Model for search queries
   baseUrl: string; // Ollama base URL
