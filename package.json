@@ -15,9 +15,9 @@
     "ctxq": "dist/cli.js"
   },
   "scripts": {
-    "test": "bun test",
-    "build": "bun build src/cli.ts --outdir ./dist --target bun",
-    "start": "bun run src/cli.ts",
+    "test": "node --test",
+    "build": "esbuild src/cli.ts --bundle --platform=node --outfile=dist/cli.js",
+    "start": "node dist/cli.js",
     "format": "biome format --write .",
     "lint": "biome lint .",
     "check": "biome check .",
@@ -48,6 +48,7 @@
     "@types/better-sqlite3": "^7.6.11",
     "@types/bun": "latest",
     "@types/node": "^22.10.0",
+    "esbuild": "^0.27.3",
     "semantic-release": "^25.0.3",
     "typescript": "^5.7.2"
   },
