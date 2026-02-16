@@ -30,7 +30,7 @@ jobs:
         run: |
           rm -rf node_modules
           bun install
-          bunx node-gyp-build
+          cd node_modules/tree-sitter && bunx node-gyp-build
 
       - name: Run tests
         run: bun test
