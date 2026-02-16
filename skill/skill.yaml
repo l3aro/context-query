@@ -19,7 +19,7 @@ skill:
   documentation:
     skills: "SKILLS.md"
     architecture: "AGENTS.md"
-    main: "https://github.com/l3aro/project-context-query#readme"
+    main: "https://github.com/l3aro/context-query#readme"
 
   patterns:
     - name: "CLI Usage"
@@ -63,7 +63,7 @@ skill:
     - "code structure"
 
   repository:
-    url: "https://github.com/l3aro/project-context-query"
+    url: "https://github.com/l3aro/context-query"
     license: "MIT"
 
   ai_usage:

@@ -3,7 +3,7 @@
 ## Project Overview
 
 **Name:** Context Query (ctxq)
-**Repository:** github.com/l3aro/project-context-query
+**Repository:** github.com/l3aro/context-query
 **Language:** TypeScript (Bun runtime)
 **License:** MIT
 **Purpose:** Code analysis tool for LLMs with tree-sitter parsing and semantic embeddings
