@@ -26,13 +26,15 @@ export class VectorStore {
   private db: Database | null = null;
   private dbPath: string;
   private dimensions: number = 768;
+  private model: string = '';
 
   constructor(dbPath: string) {
     this.dbPath = dbPath;
   }
 
-  async initialize(dimensions: number = 768): Promise<void> {
+  async initialize(dimensions: number = 768, model?: string): Promise<void> {
     this.dimensions = dimensions;
+    this.model = model || '';
 
     // Ensure directory exists
     const dir = dirname(this.dbPath);
@@ -66,6 +68,35 @@ export class VectorStore {
         embedding float[${this.dimensions}]
       );
     `);
+
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS cache (
+        hash TEXT PRIMARY KEY,
+        embedding blob,
+        model TEXT,
+        dimensions INTEGER
+      );
+    `);
+
+    // Invalidate cache if model/dimensions changed
+    if (model) {
+      try {
+        const cacheModel = this.db.query('SELECT model, dimensions FROM cache LIMIT 1').get() as {
+          model: string;
+          dimensions: number;
+        } | null;
+        if (
+          cacheModel &&
+          (cacheModel.model !== model || cacheModel.dimensions !== this.dimensions)
+        ) {
+          console.log('  Model/dimensions changed, clearing cache...');
+          this.db.exec('DELETE FROM cache');
+        }
+      } catch {
+        // Table might not have new columns yet, clear it
+        this.db.exec('DELETE FROM cache');
+      }
+    }
 
     // Get count for logging
     const count = this.db.query('SELECT COUNT(*) as count FROM vectors').get() as {
@@ -160,7 +191,9 @@ export class VectorStore {
 
     // Parse dimensions from "embedding float[N]"
     const match = row.sql.match(/embedding float\[(\d+)\]/);
-    return match ? parseInt(match[1]!, 10) : null;
+    if (!match) return null;
+    const dim = match[1];
+    return dim ? parseInt(dim, 10) : null;
   }
 
   async clear(): Promise<void> {
@@ -169,6 +202,42 @@ export class VectorStore {
     }
 
     this.db.exec('DELETE FROM vectors');
+  }
+
+  async getCachedEmbedding(contentHash: string): Promise<number[] | null> {
+    if (!this.db) return null;
+    const row = this.db.query('SELECT embedding FROM cache WHERE hash = ?').get(contentHash) as {
+      embedding: Uint8Array;
+    } | null;
+    if (!row) return null;
+    return Array.from(new Float32Array(row.embedding.buffer));
+  }
+
+  async cacheEmbedding(contentHash: string, embedding: number[]): Promise<void> {
+    if (!this.db) return;
+    const embeddingBuffer = new Uint8Array(new Float32Array(embedding).buffer);
+    try {
+      this.db
+        .query(
+          'INSERT OR REPLACE INTO cache (hash, embedding, model, dimensions) VALUES (?, ?, ?, ?)',
+        )
+        .run(contentHash, embeddingBuffer, this.model, this.dimensions);
+    } catch {
+      this.db.exec('DROP TABLE IF EXISTS cache');
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS cache (
+          hash TEXT PRIMARY KEY,
+          embedding blob,
+          model TEXT,
+          dimensions INTEGER
+        );
+      `);
+      this.db
+        .query(
+          'INSERT OR REPLACE INTO cache (hash, embedding, model, dimensions) VALUES (?, ?, ?, ?)',
+        )
+        .run(contentHash, embeddingBuffer, this.model, this.dimensions);
+    }
   }
 
   close(): void {

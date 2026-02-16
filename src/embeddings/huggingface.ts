@@ -8,13 +8,11 @@ interface FeatureExtractionOutput {
 }
 
 export class HuggingFaceEmbeddingProvider implements EmbeddingProvider {
-  private config: EmbeddingConfig;
-  private dimensions: number = 256;
+  private dimensions: number = 768;
   private extractor: Awaited<ReturnType<typeof pipeline>> | null = null;
   private readonly model = 'onnx-community/embeddinggemma-300m-ONNX';
 
-  constructor(config: EmbeddingConfig) {
-    this.config = config;
+  constructor(_config: EmbeddingConfig) {
     // WebGPU backend for Bun compatibility
     if (env.backends?.onnx?.wasm) {
       (env.backends.onnx.wasm as { enabled: boolean }).enabled = false;
@@ -32,21 +30,32 @@ export class HuggingFaceEmbeddingProvider implements EmbeddingProvider {
 
   async embedBatch(texts: string[]): Promise<number[][]> {
     const extractor = await this.getExtractor();
-    const embeddings: number[][] = [];
 
-    for (const text of texts) {
+    const processText = async (text: string): Promise<number[]> => {
       const output = (await extractor(text, {
         pooling: 'mean',
         normalize: true,
       })) as FeatureExtractionOutput;
-      embeddings.push(Array.from(output.data));
+      return Array.from(output.data);
+    };
+
+    const CONCURRENCY = 8;
+    const results: number[][] = [];
+    for (let i = 0; i < texts.length; i += CONCURRENCY) {
+      const batch = texts.slice(i, i + CONCURRENCY);
+      const embeddings = await Promise.all(batch.map((t) => processText(t)));
+      results.push(...embeddings);
     }
 
-    return embeddings;
+    return results;
   }
 
   getDimensions(): number {
     return this.dimensions;
+  }
+
+  getModel(): string {
+    return this.model;
   }
 
   async isAvailable(): Promise<boolean> {

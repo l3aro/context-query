@@ -27,6 +27,10 @@ export class OllamaEmbeddingProvider implements EmbeddingProvider {
     return this.dimensions;
   }
 
+  getModel(): string {
+    return this.config.warmModel || this.config.searchModel || 'ollama';
+  }
+
   async isAvailable(): Promise<boolean> {
     try {
       const response = await fetch(`${this.config.baseUrl}/api/tags`, {

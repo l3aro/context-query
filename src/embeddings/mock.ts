@@ -3,9 +3,11 @@ import type { EmbeddingProvider } from './types';
 // Mock provider for development without Ollama credentials
 export class MockEmbeddingProvider implements EmbeddingProvider {
   private dimensions: number;
+  private modelName: string;
 
-  constructor(dimensions: number = 768) {
+  constructor(dimensions: number = 768, modelName: string = 'mock') {
     this.dimensions = dimensions;
+    this.modelName = modelName;
   }
 
   async embed(text: string): Promise<number[]> {
@@ -29,11 +31,31 @@ export class MockEmbeddingProvider implements EmbeddingProvider {
   }
 
   async embedBatch(texts: string[]): Promise<number[][]> {
-    return Promise.all(texts.map((text) => this.embed(text)));
+    const results: number[][] = [];
+    for (const text of texts) {
+      const hash = this.hashString(text);
+      const random = this.seededRandom(hash);
+
+      let sum = 0;
+      const vector: number[] = [];
+      for (let i = 0; i < this.dimensions; i++) {
+        const val = random() * 2 - 1;
+        vector.push(val);
+        sum += val * val;
+      }
+
+      const magnitude = Math.sqrt(sum);
+      results.push(vector.map((v) => v / magnitude));
+    }
+    return results;
   }
 
   getDimensions(): number {
     return this.dimensions;
+  }
+
+  getModel(): string {
+    return this.modelName;
   }
 
   async isAvailable(): Promise<boolean> {

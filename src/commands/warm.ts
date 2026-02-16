@@ -17,6 +17,22 @@ export async function runWarm(options: WarmOptions): Promise<void> {
   const configPath = join(projectPath, '.ctxq', 'config.json');
   const configExists = existsSync(configPath);
 
+  const timers: Record<string, number> = {};
+  const start = () => {
+    timers[`_${Date.now()}`] = Date.now();
+  };
+  const lap = (name: string) => {
+    const keys = Object.keys(timers).filter((k) => k.startsWith('_'));
+    const last = keys[keys.length - 1];
+    if (last) {
+      const elapsed = (Date.now() - timers[last]) / 1000;
+      console.log(`  [${elapsed.toFixed(2)}s] ${name}`);
+      delete timers[last];
+    }
+  };
+
+  start();
+
   // No config file and no CLI provider - run interview
   if (!configExists && !cliProvider) {
     console.log('# Welcome to context-query!');
@@ -35,6 +51,7 @@ export async function runWarm(options: WarmOptions): Promise<void> {
 
   // Load config at start
   const config = loadConfig(projectPath);
+  lap('Load config');
 
   // Determine effective provider: CLI flag > config > default
   const effectiveProvider = cliProvider || config.embeddings.provider || 'mock';
@@ -59,7 +76,9 @@ export async function runWarm(options: WarmOptions): Promise<void> {
 
   // Analyze project
   console.log('Analyzing code...');
+  start();
   const units = analyzeDirectory(projectPath);
+  lap('Analyze code');
 
   if (units.length === 0) {
     console.log('No code units found.');
@@ -68,9 +87,14 @@ export async function runWarm(options: WarmOptions): Promise<void> {
 
   console.log(`Found ${units.length} code units`);
 
+  start();
+
   // Create vector store
   const vectorStore = createVectorStore(projectPath);
-  await vectorStore.initialize(embeddingProvider.getDimensions());
+  await vectorStore.initialize(
+    embeddingProvider.getDimensions(),
+    embeddingProvider.getModel?.() || effectiveProvider,
+  );
 
   console.log('Generating embeddings...');
 
@@ -108,22 +132,71 @@ export async function runWarm(options: WarmOptions): Promise<void> {
     });
   }
 
-  // Generate embeddings in batches
-  const BATCH_SIZE = 10;
+  lap('Build entries');
+
+  start();
+
+  const BATCH_SIZE = 64;
+  const CONCURRENCY = 6;
+
+  const hashContent = (content: string): string => {
+    let hash = 0;
+    for (let i = 0; i < content.length; i++) {
+      const char = content.charCodeAt(i);
+      hash = ((hash << 5) - hash + char) | 0;
+    }
+    return hash.toString(16);
+  };
+
+  const chunks: VectorEntry[][] = [];
   for (let i = 0; i < entries.length; i += BATCH_SIZE) {
-    const batch = entries.slice(i, i + BATCH_SIZE);
-    const texts = batch.map((e) => e.content);
+    chunks.push(entries.slice(i, i + BATCH_SIZE));
+  }
 
-    const embeddings = await embeddingProvider.embedBatch(texts);
+  let processed = 0;
+  let cacheHits = 0;
+  const processChunk = async (chunk: VectorEntry[]): Promise<void> => {
+    const textsToEmbed: { index: number; text: string; hash: string }[] = [];
 
-    for (let j = 0; j < batch.length; j++) {
-      const entry = entries[i + j]!;
-      entry.embedding = embeddings[j]!;
+    for (let j = 0; j < chunk.length; j++) {
+      const entry = chunk[j];
+      if (!entry) continue;
+      const contentHash = hashContent(entry.content);
+      const cached = await vectorStore.getCachedEmbedding(contentHash);
+      if (cached) {
+        entry.embedding = cached;
+        cacheHits++;
+      } else {
+        textsToEmbed.push({ index: j, text: entry.content, hash: contentHash });
+      }
     }
 
-    const progress = Math.min(i + BATCH_SIZE, entries.length);
-    console.log(`  Embedded ${progress}/${entries.length}...`);
+    if (textsToEmbed.length > 0) {
+      const texts = textsToEmbed.map((t) => t.text);
+      const embeddings = await embeddingProvider.embedBatch(texts);
+
+      for (let k = 0; k < textsToEmbed.length; k++) {
+        const t = textsToEmbed[k];
+        const embedding = embeddings[k];
+        const targetEntry = chunk[t?.index ?? -1];
+        if (!t || !embedding || !targetEntry) continue;
+        targetEntry.embedding = embedding;
+        await vectorStore.cacheEmbedding(t.hash, embedding);
+      }
+    }
+
+    processed += chunk.length;
+    console.log(`  Embedded ${processed}/${entries.length} (cache: ${cacheHits})...`);
+  };
+
+  for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+    const chunkGroup = chunks.slice(i, i + CONCURRENCY);
+    await Promise.all(chunkGroup.map((chunk) => processChunk(chunk)));
   }
+
+  console.log(`  Cache hits: ${cacheHits}/${entries.length}`);
+
+  lap('Generate embeddings');
 
   // Deduplicate entries by ID (some functions may appear multiple times)
   const uniqueEntries = Array.from(new Map(entries.map((e) => [e.id, e])).values());
@@ -134,8 +207,10 @@ export async function runWarm(options: WarmOptions): Promise<void> {
 
   // Store in vector DB
   console.log('Storing in vector database...');
+  start();
   await vectorStore.clear();
   await vectorStore.insert(uniqueEntries);
+  lap('Store in vector DB');
 
   console.log('');
   console.log(`✓ Indexed ${uniqueEntries.length} code units`);

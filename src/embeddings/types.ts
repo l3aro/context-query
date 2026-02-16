@@ -15,6 +15,11 @@ export interface EmbeddingProvider {
   getDimensions(): number;
 
   /**
+   * Get the model name
+   */
+  getModel(): string;
+
+  /**
    * Check if the provider is available
    */
   isAvailable(): Promise<boolean>;

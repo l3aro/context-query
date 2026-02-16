@@ -19,6 +19,6 @@ export function createEmbeddingProvider(config?: Partial<EmbeddingConfig>): Embe
     case 'huggingface':
       return new HuggingFaceEmbeddingProvider(finalConfig);
     default:
-      return new MockEmbeddingProvider();
+      return new MockEmbeddingProvider(768, finalConfig.warmModel || 'mock');
   }
 }
